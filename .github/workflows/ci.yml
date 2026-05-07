@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[test,dev]'
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Build package
+        run: python -m build
+
+      - name: Run tests
+        run: pytest -q
+
+  real-eshkol:
+    name: Real Eshkol smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[test,dev]'
+
+      - name: Download Eshkol runtime
+        run: eshkol-kernel-fetch-runtime --output .external/eshkol
+
+      - name: Run real runtime smoke tests
+        run: ESHKOL_REAL_REPL="$PWD/.external/eshkol/bin/eshkol-repl" pytest -q tests/test_real_eshkol.py

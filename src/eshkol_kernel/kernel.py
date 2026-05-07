@@ -6,10 +6,9 @@ from typing import Any
 from ipykernel.kernelbase import Kernel
 
 from . import __version__
-from .completion import complete, inspect_symbol, token_at_cursor
+from .completion import complete, extract_defined_symbols, inspect_symbol, token_at_cursor
 from .forms import check_completeness
-from .session import EshkolReplSession, EshkolSessionError, ExecutionResult
-
+from .session import DisplayData, EshkolReplSession, EshkolSessionError, ExecutionResult
 
 SessionFactory = Callable[[], EshkolReplSession]
 
@@ -42,6 +41,7 @@ class EshkolKernel(Kernel):
         super().__init__(*args, **kwargs)
         self._session_factory = session_factory or EshkolReplSession.from_env
         self._eshkol_session: EshkolReplSession | None = None
+        self._user_symbols: set[str] = set()
 
     @property
     def eshkol_session(self) -> EshkolReplSession:
@@ -68,6 +68,7 @@ class EshkolKernel(Kernel):
             self._publish_result(result)
 
         if result.ok:
+            self._user_symbols.update(extract_defined_symbols(code))
             return {
                 "status": "ok",
                 "execution_count": self.execution_count,
@@ -85,7 +86,7 @@ class EshkolKernel(Kernel):
         }
 
     def do_complete(self, code: str, cursor_pos: int) -> dict[str, Any]:
-        return complete(code, cursor_pos)
+        return complete(code, cursor_pos, extra_symbols=self._user_symbols)
 
     def do_inspect(self, code: str, cursor_pos: int, detail_level: int = 0) -> dict[str, Any]:
         del detail_level
@@ -119,6 +120,8 @@ class EshkolKernel(Kernel):
         return {"status": "ok"}
 
     def _publish_result(self, result: ExecutionResult) -> None:
+        for display in result.display_data:
+            self._publish_display_data(display)
         if result.stdout:
             self.send_response(
                 self.iopub_socket,
@@ -142,3 +145,12 @@ class EshkolKernel(Kernel):
                     "traceback": text.splitlines(),
                 },
             )
+
+    def _publish_display_data(self, display: DisplayData) -> None:
+        content: dict[str, Any] = {
+            "data": display.data,
+            "metadata": display.metadata,
+        }
+        if display.transient:
+            content["transient"] = display.transient
+        self.send_response(self.iopub_socket, "display_data", content)

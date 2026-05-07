@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import re
 import sys
 
@@ -56,16 +57,44 @@ def evaluate(source: str, definitions: dict[str, str]) -> None:
     if define_match:
         definitions[define_match.group(1)] = define_match.group(2)
         return
-    if source == "(+ 1 2 3)":
-        print("6")
+    add_match = re.fullmatch(r"\(\+\s+(.+)\)", source, flags=re.S)
+    if add_match:
+        values = [resolve_number(part, definitions) for part in add_match.group(1).split()]
+        if all(value is not None for value in values):
+            print(sum(value for value in values if value is not None))
+            return
+    if source == "(rich-html)":
+        print(
+            json.dumps(
+                {
+                    "type": "display_data",
+                    "data": {"text/plain": "hello", "text/html": "<strong>hello</strong>"},
+                    "metadata": {},
+                }
+            )
+        )
         return
     if source == "(cause-error)":
         print("Error: synthetic failure")
+        return
+    if source == "(syntax-problem)":
+        print("syntax-error: unexpected closing delimiter")
+        return
+    if source == "(runtime-problem)":
+        print("runtime-error: undefined variable")
         return
     if source in definitions:
         print(definitions[source])
         return
     print(f"ok: {source}")
+
+
+def resolve_number(token: str, definitions: dict[str, str]) -> int | None:
+    value = definitions.get(token, token)
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 def paren_depth(source: str) -> int:

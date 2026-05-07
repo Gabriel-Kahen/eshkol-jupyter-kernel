@@ -56,7 +56,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eshkol-repl", help="Path to eshkol-repl to bake into kernel.json.")
     stdlib = parser.add_mutually_exclusive_group()
     stdlib.add_argument("--load-stdlib", action="store_true", help="Load Eshkol stdlib when the kernel starts.")
-    stdlib.add_argument("--no-load-stdlib", action="store_true", help="Do not load Eshkol stdlib when the kernel starts.")
+    stdlib.add_argument(
+        "--no-load-stdlib",
+        action="store_true",
+        help="Do not load Eshkol stdlib when the kernel starts.",
+    )
     return parser
 
 

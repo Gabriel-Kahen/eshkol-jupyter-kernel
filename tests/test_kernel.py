@@ -45,6 +45,16 @@ def test_completion() -> None:
     assert "define" in reply["matches"]
 
 
+def test_completion_includes_successful_definitions() -> None:
+    session = DummySession(ExecutionResult())
+    kernel = EshkolKernel(session_factory=lambda: session)  # type: ignore[arg-type]
+    kernel.do_execute("(define particle-count 12)", silent=True)
+
+    reply = kernel.do_complete("particle", len("particle"))
+
+    assert "particle-count" in reply["matches"]
+
+
 def test_is_complete() -> None:
     kernel = EshkolKernel(session_factory=lambda: DummySession(ExecutionResult()))  # type: ignore[arg-type]
     assert kernel.do_is_complete("(define x 1)")["status"] == "complete"

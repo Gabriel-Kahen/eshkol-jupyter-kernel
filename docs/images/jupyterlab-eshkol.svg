@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Eshkol kernel running in JupyterLab</title>
+  <desc id="desc">A stylized JupyterLab notebook showing Eshkol cells and their outputs.</desc>
+  <rect width="1280" height="760" fill="#f5f6f8"/>
+  <rect x="0" y="0" width="1280" height="48" fill="#f37726"/>
+  <circle cx="24" cy="24" r="7" fill="#ffffff"/>
+  <circle cx="46" cy="24" r="7" fill="#ffffff" opacity="0.82"/>
+  <circle cx="68" cy="24" r="7" fill="#ffffff" opacity="0.64"/>
+  <text x="100" y="31" fill="#ffffff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="650">JupyterLab</text>
+  <rect x="0" y="48" width="248" height="712" fill="#ffffff"/>
+  <rect x="248" y="48" width="1" height="712" fill="#d6dae1"/>
+  <text x="28" y="90" fill="#2f3742" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" font-weight="650">Files</text>
+  <rect x="24" y="112" width="200" height="34" rx="6" fill="#eef3f8"/>
+  <text x="44" y="134" fill="#2f3742" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">hello_eshkol.ipynb</text>
+  <text x="44" y="172" fill="#5b6675" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">src/eshkol_kernel</text>
+  <text x="44" y="204" fill="#5b6675" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">tests</text>
+  <rect x="280" y="78" width="956" height="640" rx="8" fill="#ffffff" stroke="#d5dbe3"/>
+  <rect x="280" y="78" width="956" height="50" rx="8" fill="#fbfbfc"/>
+  <rect x="280" y="120" width="956" height="1" fill="#d5dbe3"/>
+  <text x="308" y="109" fill="#232b35" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="650">hello_eshkol.ipynb</text>
+  <rect x="1048" y="91" width="160" height="24" rx="12" fill="#e8f2ec"/>
+  <circle cx="1064" cy="103" r="5" fill="#238a45"/>
+  <text x="1078" y="108" fill="#1d6334" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="650">Eshkol kernel</text>
+  <text x="320" y="170" fill="#232b35" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="720">Hello Eshkol</text>
+  <text x="320" y="202" fill="#5b6675" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15">Stateful Eshkol code executed through a standard Jupyter kernel.</text>
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">
+    <rect x="320" y="238" width="856" height="82" rx="6" fill="#f7f9fb" stroke="#d5dbe3"/>
+    <rect x="320" y="238" width="70" height="82" rx="6" fill="#edf1f6"/>
+    <text x="342" y="284" fill="#5b6675">In [1]</text>
+    <text x="410" y="284" fill="#111827">(+ 1 2 3)</text>
+    <rect x="390" y="332" width="786" height="46" rx="6" fill="#ffffff" stroke="#e2e6ec"/>
+    <text x="410" y="361" fill="#111827">6</text>
+    <rect x="320" y="408" width="856" height="112" rx="6" fill="#f7f9fb" stroke="#d5dbe3"/>
+    <rect x="320" y="408" width="70" height="112" rx="6" fill="#edf1f6"/>
+    <text x="342" y="466" fill="#5b6675">In [2]</text>
+    <text x="410" y="452" fill="#111827">(define x 41)</text>
+    <text x="410" y="482" fill="#111827">x</text>
+    <rect x="390" y="532" width="786" height="46" rx="6" fill="#ffffff" stroke="#e2e6ec"/>
+    <text x="410" y="561" fill="#111827">41</text>
+    <rect x="320" y="608" width="856" height="58" rx="6" fill="#f7f9fb" stroke="#d5dbe3"/>
+    <rect x="320" y="608" width="70" height="58" rx="6" fill="#edf1f6"/>
+    <text x="342" y="643" fill="#5b6675">In [3]</text>
+    <text x="410" y="643" fill="#111827">(+ x 1)</text>
+    <rect x="1032" y="620" width="84" height="34" rx="6" fill="#e8f2ec" stroke="#c9dfd0"/>
+    <text x="1060" y="642" fill="#1d6334">42</text>
+  </g>
+</svg>

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 
-
 COMMON_SYMBOLS = sorted(
     {
         "*",
@@ -23,23 +22,33 @@ COMMON_SYMBOLS = sorted(
         "call/cc",
         "car",
         "cdr",
+        "caar",
+        "cadr",
+        "cdar",
+        "cddr",
+        "ceiling",
         "cond",
         "cons",
         "cos",
         "curl",
         "define",
+        "define-macro",
         "derivative",
         "display",
         "divergence",
         "dynamic-wind",
         "else",
+        "eq?",
+        "equal?",
         "exp",
         "filter",
+        "floor",
         "fold",
         "for-each",
         "gradient",
         "guard",
         "if",
+        "integer?",
         "lambda",
         "laplacian",
         "length",
@@ -49,29 +58,44 @@ COMMON_SYMBOLS = sorted(
         "list",
         "list?",
         "log",
+        "magnitude",
         "map",
         "max",
+        "member",
+        "memq",
         "min",
+        "modulo",
         "newline",
         "not",
         "null?",
         "number?",
         "or",
+        "pair?",
         "print",
+        "quotient",
         "quote",
         "raise",
+        "remainder",
         "require",
+        "reverse",
+        "round",
         "sin",
         "sqrt",
         "string?",
         "symbol?",
         "tensor",
+        "truncate",
         "vector",
+        "vector-ref",
+        "vector-set!",
+        "zero?",
         "write",
     }
 )
 
 TOKEN_RE = re.compile(r"[A-Za-z0-9_+\-*/<>=!?$%&.:^~]+$")
+DEFINE_VALUE_RE = re.compile(r"\(\s*define\s+([A-Za-z0-9_+\-*/<>=!?$%&.:^~]+)")
+DEFINE_FUNCTION_RE = re.compile(r"\(\s*define\s+\(\s*([A-Za-z0-9_+\-*/<>=!?$%&.:^~]+)")
 
 
 def token_at_cursor(code: str, cursor_pos: int) -> tuple[str, int, int]:
@@ -83,9 +107,10 @@ def token_at_cursor(code: str, cursor_pos: int) -> tuple[str, int, int]:
     return match.group(0), match.start(), cursor_pos
 
 
-def complete(code: str, cursor_pos: int) -> dict[str, object]:
+def complete(code: str, cursor_pos: int, extra_symbols: set[str] | None = None) -> dict[str, object]:
     token, start, end = token_at_cursor(code, cursor_pos)
-    matches = [symbol for symbol in COMMON_SYMBOLS if symbol.startswith(token)] if token else COMMON_SYMBOLS
+    symbols = sorted(set(COMMON_SYMBOLS).union(extra_symbols or set()))
+    matches = [symbol for symbol in symbols if symbol.startswith(token)] if token else symbols
     return {
         "matches": matches,
         "cursor_start": start,
@@ -95,8 +120,16 @@ def complete(code: str, cursor_pos: int) -> dict[str, object]:
     }
 
 
+def extract_defined_symbols(code: str) -> set[str]:
+    symbols: set[str] = set()
+    symbols.update(match.group(1) for match in DEFINE_VALUE_RE.finditer(code))
+    symbols.update(match.group(1) for match in DEFINE_FUNCTION_RE.finditer(code))
+    return symbols
+
+
 def inspect_symbol(symbol: str) -> str | None:
     docs = {
+        "+": "(+ a b ...) adds numbers.",
         "define": "(define name value) or (define (name args...) body...)",
         "lambda": "(lambda (args...) body...)",
         "derivative": "(derivative f x) computes a scalar derivative.",

@@ -4,9 +4,7 @@ A Jupyter kernel for Eshkol. It lets JupyterLab, classic Notebook, VS Code
 notebooks, and other Jupyter clients execute Eshkol code cells through a
 long-lived `eshkol-repl` process.
 
-This is separate from the standalone `eshkol-notebook` web app. That app owns
-its own notebook UI and browser VM integration. This package plugs Eshkol into
-the standard Jupyter `.ipynb` ecosystem.
+![Eshkol running in JupyterLab](docs/images/jupyterlab-eshkol.svg)
 
 ## Status
 
@@ -15,14 +13,18 @@ Alpha, but usable:
 - Stateful code execution through `eshkol-repl`
 - Multiline cell handling
 - Multiple top-level forms in one cell
-- Text output and error reporting
-- Kernel completion for common Scheme/Eshkol forms
+- Text streams, classified errors, and Jupyter `display_data` MIME bundles
+- Completion for common Scheme/Eshkol forms plus symbols defined in successful cells
 - Kernel installation via `eshkol-kernel-install`
+- Runtime download helper via `eshkol-kernel-fetch-runtime`
+- Unit, Jupyter protocol, notebook execution, packaging, and real-runtime smoke tests
 
-The kernel expects `eshkol-repl` to be installed and available on `PATH`, or
-configured with `ESHKOL_REPL`.
+This package does not vendor Eshkol itself. You can point it at an existing
+`eshkol-repl`, or use the fetch command below to download a local development
+runtime into `.external/`. The `.external/` directory is intentionally ignored
+by git.
 
-## Install
+## Quick Start
 
 Clone this repo and create a Python environment:
 
@@ -31,41 +33,35 @@ git clone https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel.git
 cd eshkol-jupyter-kernel
 python3 -m venv .venv
 . .venv/bin/activate
-pip install -e .
+python -m pip install --upgrade pip
+python -m pip install -e .
 ```
 
-Then install the Jupyter kernelspec. If `eshkol-repl` is already on `PATH`:
+If `eshkol-repl` is already on `PATH`, install the kernelspec:
 
 ```bash
 eshkol-kernel-install --user
 ```
 
-Then open JupyterLab, classic Notebook, or VS Code and select the `Eshkol`
-kernel.
-
-To pin the kernelspec to a specific Eshkol release binary:
+If you want the repo to fetch the latest compatible Eshkol release binary:
 
 ```bash
-eshkol-kernel-install --user --eshkol-repl /path/to/eshkol-repl
-```
-
-To fetch the latest compatible Eshkol release binary from GitHub into this repo:
-
-```bash
-python scripts/fetch_eshkol_release.py
+eshkol-kernel-fetch-runtime --output .external/eshkol
 eshkol-kernel-install --user --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl"
 ```
 
-To use the included example notebook with JupyterLab:
+Open the included example notebook:
 
 ```bash
-pip install jupyterlab
+python -m pip install jupyterlab
 jupyter lab examples/hello_eshkol.ipynb
 ```
 
-## Configure
+Then select the `Eshkol` kernel if Jupyter does not choose it automatically.
 
-Environment variables:
+## Runtime Options
+
+The kernel reads these environment variables when Jupyter starts it:
 
 - `ESHKOL_REPL`: path to `eshkol-repl` (default: `eshkol-repl`)
 - `ESHKOL_KERNEL_LOAD_STDLIB`: load stdlib on startup (`1` by default)
@@ -73,16 +69,70 @@ Environment variables:
 - `ESHKOL_KERNEL_TIMEOUT`: per-cell execution timeout in seconds (default: `30`)
 - `ESHKOL_KERNEL_START_TIMEOUT`: REPL startup timeout in seconds (default: `10`)
 
-Example:
+If Jupyter launches from an environment that does not inherit your shell
+variables, bake the runtime path into the kernelspec:
 
 ```bash
-ESHKOL_REPL=/path/to/eshkol-repl eshkol-kernel-install --user
+eshkol-kernel-install --user --eshkol-repl /absolute/path/to/eshkol-repl
 ```
 
-If Jupyter launches from an environment that does not inherit your shell
-variables, set the variable before starting Jupyter itself.
-Alternatively, use `eshkol-kernel-install --eshkol-repl /path/to/eshkol-repl`
-to write that path directly into the kernelspec.
+The fetch helper supports release tags and flavors:
+
+```bash
+eshkol-kernel-fetch-runtime --tag latest --flavor lite --output .external/eshkol
+```
+
+Use `.external/` as local setup, not as source code. Installation docs use it
+because it gives new contributors a repeatable path, but production or packaged
+setups can point the kernelspec at any Eshkol installation.
+
+## Manage The Kernelspec
+
+List installed kernels:
+
+```bash
+jupyter kernelspec list
+```
+
+Update or reinstall the default `Eshkol` kernelspec:
+
+```bash
+eshkol-kernel-install --user --eshkol-repl /absolute/path/to/eshkol-repl
+```
+
+Install a second kernelspec name for another runtime:
+
+```bash
+eshkol-kernel-install --user \
+  --name eshkol-dev \
+  --display-name "Eshkol Dev" \
+  --eshkol-repl /absolute/path/to/dev/eshkol-repl
+```
+
+Uninstall the default kernelspec:
+
+```bash
+jupyter kernelspec uninstall eshkol
+```
+
+## Rich Display Output
+
+The kernel treats any single output line matching this JSON shape as a Jupyter
+MIME bundle and publishes it as `display_data` instead of plain stdout:
+
+```json
+{
+  "type": "display_data",
+  "data": {
+    "text/plain": "hello",
+    "text/html": "<strong>hello</strong>"
+  },
+  "metadata": {}
+}
+```
+
+This is a small bridge until Eshkol has a native notebook display API. Normal
+text output still goes to stdout.
 
 ## How It Works
 
@@ -101,18 +151,28 @@ marker while keeping the same REPL state alive between cells.
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-pip install -e '.[test]'
+python -m pip install --upgrade pip
+python -m pip install -e '.[test,dev]'
+ruff check .
+python -m build
 pytest
 ```
 
-The tests use a fake REPL so they can run even when Eshkol itself is not
-installed.
+The default tests use a fake REPL so they can run even when Eshkol itself is not
+installed. To run the real-runtime smoke tests locally:
+
+```bash
+eshkol-kernel-fetch-runtime --output .external/eshkol
+ESHKOL_REAL_REPL="$PWD/.external/eshkol/bin/eshkol-repl" pytest tests/test_real_eshkol.py
+```
+
+CI runs linting, package builds, fake-REPL tests, notebook execution tests, and
+a separate real Eshkol smoke test that downloads the release binary.
 
 ## Known Limits
 
-- This package currently targets Unix-like systems where `pexpect` can allocate
-  a pseudo-terminal. macOS and Linux are the intended platforms.
-- Rich display output is not implemented yet. Text output works; plots/images
-  should be added once Eshkol exposes a stable notebook display convention.
+- This package targets Unix-like systems where `pexpect` can allocate a
+  pseudo-terminal. macOS and Linux are the intended platforms.
+- Rich display output currently depends on the JSON line convention above.
 - Interrupt behavior depends on the native REPL's signal handling and the
   frontend. Restarting the kernel is the reliable reset path.

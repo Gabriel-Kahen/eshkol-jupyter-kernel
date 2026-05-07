@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import shlex
 import sys
 import uuid
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from shutil import which
-from typing import Sequence
+from typing import Any
 
 from .forms import FormError, split_top_level_forms
 
@@ -23,10 +25,25 @@ INLINE_PROMPT_RE = re.compile(r"(?:eshkol|\[\d+,\d+\])>\s*")
 ERROR_RE = re.compile(
     r"(?im)(^|\n)\s*(?:error:|.*\berror\b|.*\bexception\b|syntax-error:|runtime-error:)"
 )
+CLASSIFIED_ERROR_PATTERNS = [
+    (re.compile(r"(?im)(^|\n)\s*syntax[- ]?error\s*:?\s*.*"), "EshkolSyntaxError"),
+    (re.compile(r"(?im)(^|\n)\s*runtime[- ]?error\s*:?\s*.*"), "EshkolRuntimeError"),
+    (re.compile(r"(?im)(^|\n)\s*type[- ]?error\s*:?\s*.*"), "EshkolTypeError"),
+    (re.compile(r"(?im)(^|\n)\s*(?:divide[- ]?by[- ]?zero|division by zero)\b.*"), "EshkolZeroDivisionError"),
+    (re.compile(r"(?im)(^|\n)\s*exception\s*:?\s*.*"), "EshkolException"),
+    (ERROR_RE, "EshkolError"),
+]
 
 
 class EshkolSessionError(RuntimeError):
     """Raised when the Eshkol REPL session cannot be used."""
+
+
+@dataclass
+class DisplayData:
+    data: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    transient: dict[str, Any] | None = None
 
 
 @dataclass
@@ -35,6 +52,7 @@ class ExecutionResult:
     stderr: str = ""
     ok: bool = True
     error_name: str = "EshkolError"
+    display_data: list[DisplayData] = field(default_factory=list)
 
 
 class EshkolReplSession:
@@ -61,7 +79,7 @@ class EshkolReplSession:
         self._child = None
 
     @classmethod
-    def from_env(cls) -> "EshkolReplSession":
+    def from_env(cls) -> EshkolReplSession:
         executable = os.environ.get("ESHKOL_REPL", "eshkol-repl")
         argv = shlex.split(os.environ.get("ESHKOL_KERNEL_REPL_ARGS", ""))
         load_stdlib = os.environ.get("ESHKOL_KERNEL_LOAD_STDLIB", "1").lower() not in {
@@ -127,12 +145,16 @@ class EshkolReplSession:
             output_parts.append(self._execute_form(form))
 
         stdout = "\n".join(part for part in output_parts if part).strip()
-        ok = not ERROR_RE.search(stdout)
-        return ExecutionResult(
-            stdout=f"{stdout}\n" if stdout else "",
-            stderr="" if ok else f"{stdout}\n",
-            ok=ok,
-        )
+        text, display_data = extract_display_data(stdout)
+        error_name = classify_error(text)
+        if error_name:
+            return ExecutionResult(
+                stderr=f"{text}\n" if text else "",
+                ok=False,
+                error_name=error_name,
+                display_data=display_data,
+            )
+        return ExecutionResult(stdout=f"{text}\n" if text else "", display_data=display_data)
 
     def interrupt(self) -> None:
         if self.is_running:
@@ -227,3 +249,50 @@ def remove_echoed_input(output: str, sent_forms: Sequence[str]) -> str:
     while lines and not lines[-1].strip():
         lines.pop()
     return "\n".join(lines)
+
+
+def classify_error(text: str) -> str | None:
+    for pattern, error_name in CLASSIFIED_ERROR_PATTERNS:
+        if pattern.search(text):
+            return error_name
+    return None
+
+
+def extract_display_data(output: str) -> tuple[str, list[DisplayData]]:
+    text_lines: list[str] = []
+    display_data: list[DisplayData] = []
+
+    for line in output.splitlines():
+        parsed = parse_display_data(line)
+        if parsed is None:
+            text_lines.append(line)
+        else:
+            display_data.append(parsed)
+
+    return "\n".join(text_lines).strip(), display_data
+
+
+def parse_display_data(line: str) -> DisplayData | None:
+    stripped = line.strip()
+    if not stripped.startswith("{"):
+        return None
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+
+    if payload.get("type") != "display_data":
+        return None
+
+    data = payload.get("data")
+    metadata = payload.get("metadata", {})
+    transient = payload.get("transient")
+    if not isinstance(data, dict):
+        return None
+    if not isinstance(metadata, dict):
+        metadata = {}
+    if transient is not None and not isinstance(transient, dict):
+        transient = None
+    return DisplayData(data=data, metadata=metadata, transient=transient)

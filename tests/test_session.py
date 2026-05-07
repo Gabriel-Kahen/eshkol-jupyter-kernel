@@ -5,8 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from eshkol_kernel.session import EshkolReplSession, EshkolSessionError, clean_repl_output
-
+from eshkol_kernel.session import EshkolReplSession, EshkolSessionError, classify_error, clean_repl_output
 
 FAKE_REPL = Path(__file__).with_name("fake_eshkol_repl.py")
 
@@ -59,6 +58,35 @@ def test_execute_reports_error_text() -> None:
         session.close()
     assert not result.ok
     assert "synthetic failure" in result.stderr
+
+
+def test_execute_classifies_syntax_errors() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(syntax-problem)")
+    finally:
+        session.close()
+    assert not result.ok
+    assert result.error_name == "EshkolSyntaxError"
+    assert "unexpected closing delimiter" in result.stderr
+
+
+def test_execute_extracts_rich_display_data() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(rich-html)")
+    finally:
+        session.close()
+    assert result.ok
+    assert result.stdout == ""
+    assert len(result.display_data) == 1
+    assert result.display_data[0].data["text/html"] == "<strong>hello</strong>"
+
+
+def test_classify_error_variants() -> None:
+    assert classify_error("runtime-error: undefined variable") == "EshkolRuntimeError"
+    assert classify_error("division by zero") == "EshkolZeroDivisionError"
+    assert classify_error("ordinary output") is None
 
 
 def test_missing_executable_error() -> None:
