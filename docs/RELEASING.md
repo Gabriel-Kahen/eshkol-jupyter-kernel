@@ -5,7 +5,9 @@ API tokens to GitHub secrets.
 
 ## One-Time PyPI Setup
 
-Create Trusted Publisher entries before the first upload.
+Trusted Publisher entries have already been created for this repository. Keep
+these values in sync if the repository, workflow files, or environment names are
+renamed.
 
 For TestPyPI:
 
@@ -21,16 +23,16 @@ For PyPI:
 - workflow name: `release.yml`
 - environment name: `pypi`
 
-In GitHub repository settings, create matching environments named `testpypi` and
-`pypi`. Require manual approval for the `pypi` environment.
+The matching GitHub environments are also configured:
 
-For this repository, the GitHub environments are already configured. The
-remaining one-time setup is creating the Trusted Publisher entries in TestPyPI
-and PyPI.
+- `testpypi`
+- `pypi`, with required manual approval before upload
+
+Do not add long-lived PyPI API tokens to GitHub secrets.
 
 ## Pre-Release Checklist
 
-1. Confirm the package name is available or owned by this project:
+1. Confirm the package is owned by this project:
 
    ```bash
    python - <<'PY'
@@ -43,8 +45,8 @@ and PyPI.
    PY
    ```
 
-2. Decide the version in `pyproject.toml`. The initial publishing target is
-   `0.1.0a1`, leaving `0.1.0` available for a later stable first release.
+2. Decide the next version in `pyproject.toml`. Version `0.1.0a1` is already
+   published, leaving `0.1.0` available for a later stable first release.
 
 3. Update `CHANGELOG.md` and change `Unreleased` to the release date.
 
@@ -67,7 +69,7 @@ and PyPI.
 Run the `Publish to TestPyPI` workflow manually from GitHub Actions. It builds
 the package, runs `twine check`, and uploads to TestPyPI using the `testpypi`
 Trusted Publisher. The workflow currently requires a pre-release version such
-as `0.1.0a1`.
+as `0.1.0a2`.
 
 After it publishes, test installation in a fresh environment:
 
@@ -78,7 +80,7 @@ python -m pip install --upgrade pip
 python -m pip install \
   --index-url https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple/ \
-  eshkol-kernel
+  eshkol-kernel==0.1.0a2
 eshkol-kernel-doctor --skip-smoke --skip-kernelspec
 ```
 
@@ -88,8 +90,8 @@ For a real release, commit the final version and changelog, then tag exactly the
 same version with a leading `v`:
 
 ```bash
-git tag v0.1.0a1
-git push origin v0.1.0a1
+git tag v0.1.0a2
+git push origin v0.1.0a2
 ```
 
 The `Publish to PyPI` workflow validates that the tag version matches

@@ -10,6 +10,7 @@ long-lived `eshkol-repl` process.
 
 Alpha, but usable:
 
+- Published on PyPI as `eshkol-kernel` version `0.1.0a1`
 - Stateful code execution through `eshkol-repl`
 - Multiline cell handling
 - Multiple top-level forms in one cell
@@ -27,15 +28,13 @@ by git.
 
 ## Quick Start
 
-Clone this repo and create a Python environment:
+Create a Python environment and install the package from PyPI:
 
 ```bash
-git clone https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel.git
-cd eshkol-jupyter-kernel
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e .
+python -m pip install eshkol-kernel==0.1.0a1
 ```
 
 If `eshkol-repl` is already on `PATH`, install the kernelspec:
@@ -45,7 +44,8 @@ eshkol-kernel-install --user
 eshkol-kernel-doctor
 ```
 
-If you want the repo to fetch the latest compatible Eshkol release binary:
+If you do not have `eshkol-repl` installed, use the runtime fetch helper and
+bake the downloaded path into the kernelspec:
 
 ```bash
 eshkol-kernel-fetch-runtime --output .external/eshkol
@@ -53,14 +53,14 @@ eshkol-kernel-install --user --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-rep
 eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl"
 ```
 
-Open the included example notebook:
+Open JupyterLab:
 
 ```bash
 python -m pip install jupyterlab
-jupyter lab examples/hello_eshkol.ipynb
+jupyter lab
 ```
 
-Then select the `Eshkol` kernel if Jupyter does not choose it automatically.
+Create or open a notebook and select the `Eshkol` kernel.
 
 ## Runtime Options
 
@@ -177,6 +177,8 @@ marker while keeping the same REPL state alive between cells.
 ## Development
 
 ```bash
+git clone https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel.git
+cd eshkol-jupyter-kernel
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
@@ -206,8 +208,9 @@ Release publishing uses PyPI Trusted Publishing through GitHub Actions:
 - `Publish to PyPI` runs only for tags like `v0.1.0a1` or `v0.1.0`.
 - Both workflows build the package and run `twine check dist/*` before upload.
 
-See [docs/RELEASING.md](docs/RELEASING.md) for the PyPI/TestPyPI setup and
-release checklist.
+Version `0.1.0a1` is published on
+[PyPI](https://pypi.org/project/eshkol-kernel/). See
+[docs/RELEASING.md](docs/RELEASING.md) for the release checklist.
 
 ## Known Limits
 

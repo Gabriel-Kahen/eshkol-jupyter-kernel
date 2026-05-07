@@ -4,6 +4,7 @@ All notable changes to this project will be documented here.
 
 ## 0.1.0a1 - 2026-05-07
 
+- Published the first alpha release to PyPI as `eshkol-kernel`.
 - Added a PTY-backed Jupyter kernel for `eshkol-repl`.
 - Added kernelspec installation through `eshkol-kernel-install`.
 - Added Eshkol runtime download support through `eshkol-kernel-fetch-runtime`.
