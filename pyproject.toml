@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eshkol-kernel"
+version = "0.1.0"
+description = "A Jupyter kernel for Eshkol backed by eshkol-repl."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [
+  { name = "Gabriel Kahen" }
+]
+keywords = ["eshkol", "jupyter", "kernel", "notebook"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: Jupyter",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Interpreters",
+]
+dependencies = [
+  "ipykernel>=6.29",
+  "jupyter-client>=8.6",
+  "jupyter-core>=5.7",
+  "pexpect>=4.9; platform_system != 'Windows'",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+eshkol-kernel-install = "eshkol_kernel.install:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eshkol_kernel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

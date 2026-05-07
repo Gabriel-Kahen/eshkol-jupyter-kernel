@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import re
+import sys
+
+
+def main() -> int:
+    definitions: dict[str, str] = {}
+    print("Fake Eshkol REPL")
+    write_prompt()
+    buffer: list[str] = []
+
+    for raw_line in sys.stdin:
+        line = raw_line.rstrip("\n")
+        if line in {":quit", ":q", "quit", "exit", "(exit)"}:
+            print("Goodbye!")
+            return 0
+
+        buffer.append(line)
+        source = "\n".join(buffer)
+        if paren_depth(source) > 0:
+            write_continuation_prompt(len(buffer), paren_depth(source))
+            continue
+        if paren_depth(source) < 0:
+            print("Error: Unmatched closing parenthesis")
+            buffer.clear()
+            write_prompt()
+            continue
+
+        evaluate(source.strip(), definitions)
+        buffer.clear()
+        write_prompt()
+
+    return 0
+
+
+def evaluate(source: str, definitions: dict[str, str]) -> None:
+    if not source:
+        return
+    begin_display_match = re.fullmatch(
+        r'\(begin\s+\(display\s+"(.*)"\)\s+\(display\s+"(.*)"\)\)',
+        source,
+        flags=re.S,
+    )
+    if begin_display_match:
+        sys.stdout.write(begin_display_match.group(1) + begin_display_match.group(2))
+        sys.stdout.flush()
+        return
+    display_match = re.fullmatch(r'\(display\s+"(.*)"\)', source, flags=re.S)
+    if display_match:
+        sys.stdout.write(display_match.group(1))
+        sys.stdout.flush()
+        return
+    define_match = re.fullmatch(r"\(define\s+([^\s()]+)\s+(.+)\)", source, flags=re.S)
+    if define_match:
+        definitions[define_match.group(1)] = define_match.group(2)
+        return
+    if source == "(+ 1 2 3)":
+        print("6")
+        return
+    if source == "(cause-error)":
+        print("Error: synthetic failure")
+        return
+    if source in definitions:
+        print(definitions[source])
+        return
+    print(f"ok: {source}")
+
+
+def paren_depth(source: str) -> int:
+    depth = 0
+    in_string = False
+    escaped = False
+    in_comment = False
+    for char in source:
+        if in_comment:
+            if char == "\n":
+                in_comment = False
+            continue
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == ";":
+            in_comment = True
+            continue
+        if char == '"':
+            in_string = True
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+    return depth
+
+
+def write_prompt() -> None:
+    sys.stdout.write("eshkol> ")
+    sys.stdout.flush()
+
+
+def write_continuation_prompt(line_count: int, depth: int) -> None:
+    sys.stdout.write(f"  [{line_count},{depth}]> ")
+    sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

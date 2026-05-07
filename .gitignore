@@ -1,0 +1,15 @@
+.DS_Store
+.venv/
+.external/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+build/
+dist/
+*.egg-info/
+htmlcov/
+.coverage
+jupyter_kernel_test_*.ipynb
