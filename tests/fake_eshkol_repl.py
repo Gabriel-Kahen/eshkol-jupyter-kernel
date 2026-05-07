@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import time
 
 
 def main() -> int:
@@ -73,6 +74,29 @@ def evaluate(source: str, definitions: dict[str, str]) -> None:
                 }
             )
         )
+        return
+    if source == "(mixed-rich)":
+        print("before")
+        print(
+            json.dumps(
+                {
+                    "type": "display_data",
+                    "data": {"text/plain": "middle", "text/html": "<em>middle</em>"},
+                    "metadata": {},
+                }
+            )
+        )
+        print("after")
+        return
+    if source == "(display-prompt-text)":
+        print("value: eshkol> still user text")
+        print("coords: [1,2]> still user text")
+        return
+    if source == "(relative-error)":
+        print("relative error is 0.01")
+        return
+    if source == "(hang)":
+        time.sleep(60)
         return
     if source == "(cause-error)":
         print("Error: synthetic failure")

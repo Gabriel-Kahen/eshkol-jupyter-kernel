@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented here.
 
+## Unreleased
+
+- Fixed kernelspec installation to store absolute expanded `eshkol-repl` paths.
+- Fixed setup diagnostics for kernelspec/runtime mismatches and local runtime hints.
+- Hardened runtime downloads with network timeouts and safer tar extraction.
+- Fixed top-level quoted datum parsing, prompt-like stdout handling, and broad error false positives.
+- Fixed rich display output ordering when stdout and display data are mixed.
+- Fixed timeout recovery so the next cell starts from a fresh REPL session.
+
 ## 0.1.0a1 - 2026-05-07
 
 - Published the first alpha release to PyPI as `eshkol-kernel`.

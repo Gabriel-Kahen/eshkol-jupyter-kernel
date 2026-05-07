@@ -20,6 +20,16 @@ def make_session() -> EshkolReplSession:
     )
 
 
+def make_short_timeout_session() -> EshkolReplSession:
+    return EshkolReplSession(
+        executable=sys.executable,
+        argv=[str(FAKE_REPL)],
+        load_stdlib=False,
+        timeout=0.2,
+        start_timeout=5,
+    )
+
+
 def test_execute_single_form() -> None:
     session = make_session()
     try:
@@ -83,9 +93,62 @@ def test_execute_extracts_rich_display_data() -> None:
     assert result.display_data[0].data["text/html"] == "<strong>hello</strong>"
 
 
+def test_execute_preserves_mixed_output_order_events() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(mixed-rich)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.stdout == "before\nafter\n"
+    assert [event.kind for event in result.output_events] == ["stdout", "display_data", "stdout"]
+    assert result.output_events[0].text == "before\n"
+    assert result.output_events[1].display_data is not None
+    assert result.output_events[1].display_data.data["text/plain"] == "middle"
+    assert result.output_events[2].text == "after\n"
+
+
+def test_execute_does_not_strip_prompt_text_from_stdout() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(display-prompt-text)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert "value: eshkol> still user text" in result.stdout
+    assert "coords: [1,2]> still user text" in result.stdout
+
+
+def test_execute_does_not_classify_plain_error_word_as_failure() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(relative-error)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.stdout == "relative error is 0.01\n"
+
+
+def test_execute_recovers_after_timeout() -> None:
+    session = make_short_timeout_session()
+    try:
+        with pytest.raises(EshkolSessionError, match="timed out"):
+            session.execute("(hang)")
+        result = session.execute("(+ 1 2 3)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.stdout == "6\n"
+
+
 def test_classify_error_variants() -> None:
     assert classify_error("runtime-error: undefined variable") == "EshkolRuntimeError"
     assert classify_error("division by zero") == "EshkolZeroDivisionError"
+    assert classify_error("relative error is 0.01") is None
     assert classify_error("ordinary output") is None
 
 

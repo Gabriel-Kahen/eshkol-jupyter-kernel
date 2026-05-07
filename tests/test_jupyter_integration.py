@@ -19,3 +19,15 @@ def test_kernel_sends_rich_display_data(tmp_path: Path) -> None:
 
     assert reply["status"] == "ok"
     assert outputs == [("display_data", {"text/plain": "hello", "text/html": "<strong>hello</strong>"})]
+
+
+def test_kernel_preserves_mixed_output_order(tmp_path: Path) -> None:
+    with started_kernel(tmp_path, kernel_name="eshkol-mixed-rich") as client:
+        reply, outputs = execute_and_collect(client, "(mixed-rich)")
+
+    assert reply["status"] == "ok"
+    assert outputs == [
+        ("stdout", "before\n"),
+        ("display_data", {"text/plain": "middle", "text/html": "<em>middle</em>"}),
+        ("stdout", "after\n"),
+    ]

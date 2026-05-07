@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 REPO = "tsotchke/eshkol"
+DEFAULT_TIMEOUT = 60.0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -19,13 +20,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tag", default="latest", help="Release tag to download, or 'latest'.")
     parser.add_argument("--flavor", default="lite", choices=["lite", "xla", "cuda"], help="Release flavor.")
     parser.add_argument("--output", default=".external/eshkol", help="Extraction directory.")
+    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Network timeout in seconds.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
-    release = fetch_release(args.tag)
+    release = fetch_release(args.tag, timeout=args.timeout)
     asset = choose_asset(release, args.flavor)
     output = Path(args.output).resolve()
     downloads = output.parent / "downloads"
@@ -34,10 +36,10 @@ def main(argv: list[str] | None = None) -> int:
 
     archive = downloads / asset["name"]
     sums = downloads / "SHA256SUMS.txt"
-    download(asset["browser_download_url"], archive)
+    download(asset["browser_download_url"], archive, timeout=args.timeout)
     sums_asset = next((item for item in release["assets"] if item["name"] == "SHA256SUMS.txt"), None)
     if sums_asset:
-        download(sums_asset["browser_download_url"], sums)
+        download(sums_asset["browser_download_url"], sums, timeout=args.timeout)
         verify_from_sums(archive, sums)
     elif asset.get("digest", "").startswith("sha256:"):
         verify_digest(archive, asset["digest"].split(":", 1)[1])
@@ -60,11 +62,11 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def fetch_release(tag: str) -> dict[str, Any]:
+def fetch_release(tag: str, *, timeout: float = DEFAULT_TIMEOUT) -> dict[str, Any]:
     url = f"https://api.github.com/repos/{REPO}/releases/latest"
     if tag != "latest":
         url = f"https://api.github.com/repos/{REPO}/releases/tags/{tag}"
-    with urllib.request.urlopen(url) as response:
+    with urllib.request.urlopen(url, timeout=timeout) as response:
         return json.load(response)
 
 
@@ -94,8 +96,8 @@ def choose_asset(release: dict[str, Any], flavor: str) -> dict[str, Any]:
     return matches[0]
 
 
-def download(url: str, destination: Path) -> None:
-    with urllib.request.urlopen(url) as response, destination.open("wb") as out:
+def download(url: str, destination: Path, *, timeout: float = DEFAULT_TIMEOUT) -> None:
+    with urllib.request.urlopen(url, timeout=timeout) as response, destination.open("wb") as out:
         shutil.copyfileobj(response, out)
 
 
@@ -106,17 +108,19 @@ def extract_archive(archive: Path, destination: Path) -> None:
 
 def safe_extract(tar: tarfile.TarFile, destination: Path) -> None:
     root = destination.resolve()
+    root.mkdir(parents=True, exist_ok=True)
     for member in tar.getmembers():
         target = (root / member.name).resolve()
         if not is_relative_to(target, root):
             raise SystemExit(f"Refusing to extract archive member outside output directory: {member.name}")
         if member.issym() or member.islnk():
-            link_target = Path(member.linkname)
-            if not link_target.is_absolute():
-                link_target = target.parent / link_target
-            if not is_relative_to(link_target.resolve(), root):
-                raise SystemExit(f"Refusing to extract archive link outside output directory: {member.name}")
-    tar.extractall(root)
+            raise SystemExit(f"Refusing to extract archive link: {member.name}")
+        if member.isdev():
+            raise SystemExit(f"Refusing to extract archive device: {member.name}")
+        parent = target.parent.resolve()
+        if not is_relative_to(parent, root):
+            raise SystemExit(f"Refusing to extract archive member through unsafe parent: {member.name}")
+        tar.extract(member, root)
 
 
 def is_relative_to(path: Path, root: Path) -> bool:

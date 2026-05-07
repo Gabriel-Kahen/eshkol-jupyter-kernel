@@ -36,6 +36,7 @@ def split_top_level_forms(code: str) -> list[str]:
     in_comment = False
     escaped = False
     atom_mode = False
+    awaiting_datum = False
 
     for index, char in enumerate(code):
         if start is None and in_comment:
@@ -52,6 +53,13 @@ def split_top_level_forms(code: str) -> list[str]:
             if char in ")]":
                 raise UnmatchedDelimiter("Unmatched closing delimiter.")
             start = index
+            if char in "'`,":
+                awaiting_datum = True
+                atom_mode = False
+                continue
+            if char == "#" and index + 1 < len(code) and code[index + 1] == "(":
+                atom_mode = False
+                continue
             atom_mode = char not in "(["
 
         if in_comment:
@@ -62,6 +70,19 @@ def split_top_level_forms(code: str) -> list[str]:
                     start = None
                     atom_mode = False
             continue
+
+        if awaiting_datum:
+            if char.isspace():
+                continue
+            if char == "@" and start is not None and code[start:index] == ",":
+                continue
+            if char == ";":
+                in_comment = True
+                continue
+            if char in ")]":
+                raise UnmatchedDelimiter("Unmatched closing delimiter.")
+            awaiting_datum = False
+            atom_mode = char not in "(["
 
         if in_string:
             if escaped:
@@ -106,6 +127,8 @@ def split_top_level_forms(code: str) -> list[str]:
 
     if in_string:
         raise IncompleteInput("Unterminated string literal.")
+    if awaiting_datum:
+        raise IncompleteInput("Missing datum after prefix.")
     if depth > 0:
         raise IncompleteInput("Input has unmatched opening delimiters.")
     if depth < 0:

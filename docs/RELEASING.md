@@ -59,6 +59,7 @@ Do not add long-lived PyPI API tokens to GitHub secrets.
    python -m build
    twine check dist/*
    pytest
+   eshkol-kernel-fetch-runtime --output .external/eshkol
    eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" --skip-kernelspec
    ```
 

@@ -47,7 +47,7 @@ jobs:
 
   real-eshkol:
     name: Real Eshkol smoke test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v6

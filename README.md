@@ -57,7 +57,7 @@ Open JupyterLab:
 
 ```bash
 python -m pip install jupyterlab
-jupyter lab
+python -m jupyter lab
 ```
 
 Create or open a notebook and select the `Eshkol` kernel.

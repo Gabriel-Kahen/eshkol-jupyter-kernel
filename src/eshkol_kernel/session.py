@@ -21,9 +21,9 @@ except ImportError:  # pragma: no cover - exercised on unsupported platforms.
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 PROMPT_RE = re.compile(r"(?m)^\s*(?:eshkol|\[\d+,\d+\])>\s*")
-INLINE_PROMPT_RE = re.compile(r"(?:eshkol|\[\d+,\d+\])>\s*")
+TRAILING_PROMPT_RE = re.compile(r"(?:eshkol|\[\d+,\d+\])>\s*$")
 ERROR_RE = re.compile(
-    r"(?im)(^|\n)\s*(?:error:|.*\berror\b|.*\bexception\b|syntax-error:|runtime-error:)"
+    r"(?im)(^|\n)\s*(?:error|exception|syntax[- ]?error|runtime[- ]?error|type[- ]?error)\s*:.*"
 )
 CLASSIFIED_ERROR_PATTERNS = [
     (re.compile(r"(?im)(^|\n)\s*syntax[- ]?error\s*:?\s*.*"), "EshkolSyntaxError"),
@@ -53,6 +53,14 @@ class ExecutionResult:
     ok: bool = True
     error_name: str = "EshkolError"
     display_data: list[DisplayData] = field(default_factory=list)
+    output_events: list[OutputEvent] = field(default_factory=list)
+
+
+@dataclass
+class OutputEvent:
+    kind: str
+    text: str = ""
+    display_data: DisplayData | None = None
 
 
 class EshkolReplSession:
@@ -145,7 +153,7 @@ class EshkolReplSession:
             output_parts.append(self._execute_form(form))
 
         stdout = "\n".join(part for part in output_parts if part).strip()
-        text, display_data = extract_display_data(stdout)
+        text, display_data, output_events = extract_display_data(stdout)
         error_name = classify_error(text)
         if error_name:
             return ExecutionResult(
@@ -153,8 +161,13 @@ class EshkolReplSession:
                 ok=False,
                 error_name=error_name,
                 display_data=display_data,
+                output_events=output_events,
             )
-        return ExecutionResult(stdout=f"{text}\n" if text else "", display_data=display_data)
+        return ExecutionResult(
+            stdout=f"{text}\n" if text else "",
+            display_data=display_data,
+            output_events=output_events,
+        )
 
     def interrupt(self) -> None:
         if self.is_running:
@@ -188,7 +201,7 @@ class EshkolReplSession:
             raw_output = child.before
             child.expect(self.PRIMARY_PROMPT_PATTERN, timeout=self.timeout)
         except pexpect.TIMEOUT as exc:
-            self.interrupt()
+            self.close()
             raise EshkolSessionError(f"Eshkol execution timed out after {self.timeout:g} seconds.") from exc
         except pexpect.EOF as exc:
             raise EshkolSessionError("Eshkol REPL exited unexpectedly.") from exc
@@ -216,7 +229,7 @@ class EshkolReplSession:
 def clean_repl_output(raw: str) -> str:
     text = ANSI_RE.sub("", raw).replace("\r", "")
     text = PROMPT_RE.sub("", text)
-    text = INLINE_PROMPT_RE.sub("", text)
+    text = TRAILING_PROMPT_RE.sub("", text)
     lines = [line.rstrip() for line in text.splitlines()]
     while lines and not lines[0].strip():
         lines.pop(0)
@@ -258,18 +271,28 @@ def classify_error(text: str) -> str | None:
     return None
 
 
-def extract_display_data(output: str) -> tuple[str, list[DisplayData]]:
+def extract_display_data(output: str) -> tuple[str, list[DisplayData], list[OutputEvent]]:
     text_lines: list[str] = []
     display_data: list[DisplayData] = []
+    output_events: list[OutputEvent] = []
+    pending_text: list[str] = []
 
     for line in output.splitlines():
         parsed = parse_display_data(line)
         if parsed is None:
             text_lines.append(line)
+            pending_text.append(line)
         else:
+            if pending_text:
+                output_events.append(OutputEvent(kind="stdout", text="\n".join(pending_text).strip() + "\n"))
+                pending_text = []
             display_data.append(parsed)
+            output_events.append(OutputEvent(kind="display_data", display_data=parsed))
 
-    return "\n".join(text_lines).strip(), display_data
+    if pending_text:
+        output_events.append(OutputEvent(kind="stdout", text="\n".join(pending_text).strip() + "\n"))
+
+    return "\n".join(text_lines).strip(), display_data, output_events
 
 
 def parse_display_data(line: str) -> DisplayData | None:

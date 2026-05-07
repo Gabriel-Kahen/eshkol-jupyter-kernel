@@ -116,7 +116,7 @@ def run_doctor(options: DoctorOptions) -> list[CheckResult]:
     if options.skip_kernelspec:
         results.append(CheckResult("Jupyter kernelspec", SKIP, "Skipped by --skip-kernelspec."))
     else:
-        results.append(check_kernelspec(options.kernel_name, required=options.require_kernelspec))
+        results.append(check_kernelspec(options.kernel_name, required=options.require_kernelspec, expected_repl=repl))
 
     if options.skip_smoke:
         results.append(CheckResult("execution smoke test", SKIP, "Skipped by --skip-smoke."))
@@ -162,22 +162,7 @@ def check_platform() -> CheckResult:
 def resolve_repl(configured: str | None) -> ReplResolution:
     requested = configured or os.environ.get("ESHKOL_REPL") or "eshkol-repl"
     source = "--eshkol-repl" if configured else "ESHKOL_REPL" if os.environ.get("ESHKOL_REPL") else "PATH"
-    resolved: str | None
-    if os.path.sep in requested:
-        path = Path(requested).expanduser()
-        resolved = str(path.resolve()) if path.exists() else str(path)
-    else:
-        resolved = which(requested)
-
-    exists = bool(resolved and Path(resolved).exists())
-    executable = bool(exists and os.access(str(resolved), os.X_OK))
-    return ReplResolution(
-        requested=requested,
-        resolved=resolved,
-        source=source,
-        exists=exists,
-        executable=executable,
-    )
+    return resolve_repl_value(requested, source)
 
 
 def check_repl(repl: ReplResolution) -> CheckResult:
@@ -185,7 +170,10 @@ def check_repl(repl: ReplResolution) -> CheckResult:
         external = Path.cwd() / ".external" / "eshkol" / "bin" / "eshkol-repl"
         detail = "Run `eshkol-kernel-fetch-runtime --output .external/eshkol` or set ESHKOL_REPL."
         if external.exists():
-            detail = f"Found local runtime candidate: {external}. Install with `eshkol-kernel-install --eshkol-repl`."
+            detail = (
+                f"Found local runtime candidate: {external}. "
+                f'Install with `eshkol-kernel-install --user --eshkol-repl "{external}"`.'
+            )
         return CheckResult(
             "eshkol-repl executable",
             FAIL,
@@ -256,7 +244,12 @@ def linux_dependency_hint(missing: Sequence[str]) -> str:
     return "On Ubuntu, install: " + ", ".join(packages) + "."
 
 
-def check_kernelspec(kernel_name: str, *, required: bool) -> CheckResult:
+def check_kernelspec(
+    kernel_name: str,
+    *,
+    required: bool,
+    expected_repl: ReplResolution | None = None,
+) -> CheckResult:
     manager = KernelSpecManager()
     try:
         spec = manager.get_kernel_spec(kernel_name)
@@ -267,19 +260,70 @@ def check_kernelspec(kernel_name: str, *, required: bool) -> CheckResult:
 
     env = spec.env or {}
     repl = env.get("ESHKOL_REPL")
-    if repl and os.path.sep in repl and not Path(repl).exists():
+    if repl:
+        spec_repl = resolve_repl_value(repl, "kernelspec")
+        if not spec_repl.exists:
+            status = FAIL if required else WARN
+            detail = "Reinstall it with `eshkol-kernel-install --user --eshkol-repl /path/to/eshkol-repl`."
+            return CheckResult(
+                "Jupyter kernelspec",
+                status,
+                f"Kernelspec {kernel_name!r} points at an unresolved ESHKOL_REPL: {repl}",
+                detail,
+            )
+        if not spec_repl.executable:
+            return CheckResult(
+                "Jupyter kernelspec",
+                FAIL,
+                f"Kernelspec {kernel_name!r} points at a non-executable ESHKOL_REPL: {spec_repl.resolved}",
+            )
+        if expected_repl and expected_repl.resolved and spec_repl.resolved:
+            expected_path = Path(expected_repl.resolved).resolve()
+            spec_path = Path(spec_repl.resolved).resolve()
+            if expected_path != spec_path:
+                status = FAIL if required else WARN
+                return CheckResult(
+                    "Jupyter kernelspec",
+                    status,
+                    f"Kernelspec {kernel_name!r} uses a different ESHKOL_REPL than the smoke test.",
+                    f"Smoke test used {expected_path}; kernelspec uses {spec_path}.",
+                )
+        return CheckResult("Jupyter kernelspec", PASS, f"Kernelspec {kernel_name!r} sets ESHKOL_REPL={repl}.")
+
+    if expected_repl and expected_repl.source == "--eshkol-repl":
+        status = FAIL if required else WARN
         return CheckResult(
             "Jupyter kernelspec",
-            FAIL,
-            f"Kernelspec {kernel_name!r} points at a missing ESHKOL_REPL: {repl}",
-            "Reinstall it with `eshkol-kernel-install --user --eshkol-repl /path/to/eshkol-repl`.",
+            status,
+            f"Kernelspec {kernel_name!r} does not set ESHKOL_REPL.",
+            "The smoke test used --eshkol-repl, but Jupyter will resolve eshkol-repl from its launch environment.",
         )
-    if repl:
-        return CheckResult("Jupyter kernelspec", PASS, f"Kernelspec {kernel_name!r} sets ESHKOL_REPL={repl}.")
     return CheckResult(
         "Jupyter kernelspec",
         PASS,
         f"Kernelspec {kernel_name!r} is installed and will resolve eshkol-repl from the launch environment.",
+    )
+
+
+def is_path_like(value: str) -> bool:
+    return value.startswith("~") or os.path.sep in value or (os.path.altsep is not None and os.path.altsep in value)
+
+
+def resolve_repl_value(requested: str, source: str) -> ReplResolution:
+    if is_path_like(requested):
+        path = Path(requested).expanduser()
+        resolved = str(path.resolve()) if path.exists() else str(path)
+    else:
+        resolved = which(requested)
+
+    exists = bool(resolved and Path(resolved).exists())
+    executable = bool(exists and os.access(str(resolved), os.X_OK))
+    return ReplResolution(
+        requested=requested,
+        resolved=resolved,
+        source=source,
+        exists=exists,
+        executable=executable,
     )
 
 

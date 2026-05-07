@@ -120,9 +120,13 @@ class EshkolKernel(Kernel):
         return {"status": "ok"}
 
     def _publish_result(self, result: ExecutionResult) -> None:
-        for display in result.display_data:
-            self._publish_display_data(display)
-        if result.stdout:
+        if result.output_events:
+            for event in result.output_events:
+                if event.kind == "display_data" and event.display_data is not None:
+                    self._publish_display_data(event.display_data)
+                elif event.kind == "stdout" and event.text:
+                    self._publish_stream("stdout", event.text)
+        elif result.stdout:
             self.send_response(
                 self.iopub_socket,
                 "stream",
@@ -154,3 +158,10 @@ class EshkolKernel(Kernel):
         if display.transient:
             content["transient"] = display.transient
         self.send_response(self.iopub_socket, "display_data", content)
+
+    def _publish_stream(self, name: str, text: str) -> None:
+        self.send_response(
+            self.iopub_socket,
+            "stream",
+            {"name": name, "text": text},
+        )

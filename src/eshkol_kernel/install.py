@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -27,7 +28,7 @@ def install_kernel_spec(
     }
     env = {}
     if eshkol_repl:
-        env["ESHKOL_REPL"] = eshkol_repl
+        env["ESHKOL_REPL"] = normalize_eshkol_repl(eshkol_repl)
     if load_stdlib is not None:
         env["ESHKOL_KERNEL_LOAD_STDLIB"] = "1" if load_stdlib else "0"
     if env:
@@ -43,6 +44,12 @@ def install_kernel_spec(
             prefix=prefix,
         )
     return destination
+
+
+def normalize_eshkol_repl(value: str) -> str:
+    if value.startswith("~") or os.path.sep in value or (os.path.altsep and os.path.altsep in value):
+        return str(Path(value).expanduser().resolve())
+    return value
 
 
 def build_parser() -> argparse.ArgumentParser:

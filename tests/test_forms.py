@@ -30,12 +30,35 @@ def test_split_respects_strings() -> None:
     ]
 
 
+def test_split_keeps_quoted_compound_datum_together() -> None:
+    assert split_top_level_forms("'(1 2)\n`(3 4)\n,@(items)\n#(5 6)") == [
+        "'(1 2)",
+        "`(3 4)",
+        ",@(items)",
+        "#(5 6)",
+    ]
+
+
+def test_split_quoted_atom() -> None:
+    assert split_top_level_forms("'x 'y") == ["'x", "'y"]
+
+
+def test_split_quoted_datum_after_comment() -> None:
+    assert split_top_level_forms("' ; comment\n(1 2)") == ["' ; comment\n(1 2)"]
+
+
 def test_incomplete_input() -> None:
     with pytest.raises(IncompleteInput):
         split_top_level_forms("(define x")
     completeness = check_completeness("(define x")
     assert completeness.status == "incomplete"
     assert completeness.indent == "  "
+
+
+def test_incomplete_datum_prefix() -> None:
+    with pytest.raises(IncompleteInput):
+        split_top_level_forms("'")
+    assert check_completeness("'").status == "incomplete"
 
 
 def test_unmatched_delimiter() -> None:
