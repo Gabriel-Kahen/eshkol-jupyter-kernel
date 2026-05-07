@@ -44,6 +44,7 @@ dev = [
 [project.scripts]
 eshkol-kernel-install = "eshkol_kernel.install:main"
 eshkol-kernel-fetch-runtime = "eshkol_kernel.fetch_runtime:main"
+eshkol-kernel-doctor = "eshkol_kernel.doctor:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/eshkol_kernel"]

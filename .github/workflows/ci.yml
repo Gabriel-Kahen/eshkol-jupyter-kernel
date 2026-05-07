@@ -35,6 +35,13 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+      - name: Run doctor with fake REPL
+        run: |
+          eshkol-kernel-doctor \
+            --eshkol-repl "$(python -c 'import sys; print(sys.executable)')" \
+            --repl-arg tests/fake_eshkol_repl.py \
+            --skip-kernelspec
+
   real-eshkol:
     name: Real Eshkol smoke test
     runs-on: ubuntu-latest
@@ -69,3 +76,9 @@ jobs:
 
       - name: Run real runtime smoke tests
         run: ESHKOL_REAL_REPL="$PWD/.external/eshkol/bin/eshkol-repl" pytest -q tests/test_real_eshkol.py
+
+      - name: Run doctor with real Eshkol
+        run: |
+          eshkol-kernel-doctor \
+            --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" \
+            --skip-kernelspec

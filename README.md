@@ -17,6 +17,7 @@ Alpha, but usable:
 - Completion for common Scheme/Eshkol forms plus symbols defined in successful cells
 - Kernel installation via `eshkol-kernel-install`
 - Runtime download helper via `eshkol-kernel-fetch-runtime`
+- Setup diagnostics via `eshkol-kernel-doctor`
 - Unit, Jupyter protocol, notebook execution, packaging, and real-runtime smoke tests
 
 This package does not vendor Eshkol itself. You can point it at an existing
@@ -41,6 +42,7 @@ If `eshkol-repl` is already on `PATH`, install the kernelspec:
 
 ```bash
 eshkol-kernel-install --user
+eshkol-kernel-doctor
 ```
 
 If you want the repo to fetch the latest compatible Eshkol release binary:
@@ -48,6 +50,7 @@ If you want the repo to fetch the latest compatible Eshkol release binary:
 ```bash
 eshkol-kernel-fetch-runtime --output .external/eshkol
 eshkol-kernel-install --user --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl"
+eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl"
 ```
 
 Open the included example notebook:
@@ -89,6 +92,27 @@ setups can point the kernelspec at any Eshkol installation.
 Linux release binaries may require system BLAS/LAPACK and LLVM runtime
 libraries. The CI workflow documents the Ubuntu packages currently needed for
 the downloaded Eshkol release.
+
+## Diagnose Setup
+
+Run the doctor command when Jupyter cannot start the kernel or Eshkol cells fail
+before evaluating code:
+
+```bash
+eshkol-kernel-doctor
+```
+
+It checks the package import, platform support, `eshkol-repl` resolution, shared
+library dependencies, the `Eshkol` kernelspec, and a real `(+ 1 2 3)` execution.
+Point it at a specific runtime when your kernelspec uses an absolute path:
+
+```bash
+eshkol-kernel-doctor --eshkol-repl /absolute/path/to/eshkol-repl
+```
+
+The command exits nonzero only for failures. Missing kernelspecs are warnings by
+default so contributors can diagnose the runtime before installing Jupyter
+metadata. Use `--require-kernelspec` when validating a fully installed setup.
 
 ## Manage The Kernelspec
 
@@ -168,6 +192,7 @@ installed. To run the real-runtime smoke tests locally:
 ```bash
 eshkol-kernel-fetch-runtime --output .external/eshkol
 ESHKOL_REAL_REPL="$PWD/.external/eshkol/bin/eshkol-repl" pytest tests/test_real_eshkol.py
+eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" --skip-kernelspec
 ```
 
 CI runs linting, package builds, fake-REPL tests, notebook execution tests, and
