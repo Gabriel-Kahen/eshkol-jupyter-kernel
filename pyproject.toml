@@ -4,11 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eshkol-kernel"
-version = "0.1.0"
+version = "0.1.0a1"
 description = "A Jupyter kernel for Eshkol backed by eshkol-repl."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [
   { name = "Gabriel Kahen" }
 ]
@@ -39,12 +40,19 @@ test = [
 dev = [
   "build>=1.2",
   "ruff>=0.8",
+  "twine>=6.0",
 ]
 
 [project.scripts]
 eshkol-kernel-install = "eshkol_kernel.install:main"
 eshkol-kernel-fetch-runtime = "eshkol_kernel.fetch_runtime:main"
 eshkol-kernel-doctor = "eshkol_kernel.doctor:main"
+
+[project.urls]
+Homepage = "https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel"
+Repository = "https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel"
+Issues = "https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel/issues"
+Changelog = "https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/eshkol_kernel"]

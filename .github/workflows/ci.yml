@@ -30,7 +30,10 @@ jobs:
         run: ruff check .
 
       - name: Build package
-        run: python -m build
+        run: |
+          rm -rf dist
+          python -m build
+          twine check dist/*
 
       - name: Run tests
         run: pytest -q

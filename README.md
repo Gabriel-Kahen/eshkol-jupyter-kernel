@@ -198,6 +198,17 @@ eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" --ski
 CI runs linting, package builds, fake-REPL tests, notebook execution tests, and
 a separate real Eshkol smoke test that downloads the release binary.
 
+## Release
+
+Release publishing uses PyPI Trusted Publishing through GitHub Actions:
+
+- `Publish to TestPyPI` is a manual workflow for dry runs.
+- `Publish to PyPI` runs only for tags like `v0.1.0a1` or `v0.1.0`.
+- Both workflows build the package and run `twine check dist/*` before upload.
+
+See [docs/RELEASING.md](docs/RELEASING.md) for the PyPI/TestPyPI setup and
+release checklist.
+
 ## Known Limits
 
 - This package targets Unix-like systems where `pexpect` can allocate a
