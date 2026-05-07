@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## 0.1.0a1 - Unreleased
+## 0.1.0a1 - 2026-05-07
 
 - Added a PTY-backed Jupyter kernel for `eshkol-repl`.
 - Added kernelspec installation through `eshkol-kernel-install`.

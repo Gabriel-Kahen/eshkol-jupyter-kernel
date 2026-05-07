@@ -24,6 +24,10 @@ For PyPI:
 In GitHub repository settings, create matching environments named `testpypi` and
 `pypi`. Require manual approval for the `pypi` environment.
 
+For this repository, the GitHub environments are already configured. The
+remaining one-time setup is creating the Trusted Publisher entries in TestPyPI
+and PyPI.
+
 ## Pre-Release Checklist
 
 1. Confirm the package name is available or owned by this project:
