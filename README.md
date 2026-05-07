@@ -86,6 +86,10 @@ Use `.external/` as local setup, not as source code. Installation docs use it
 because it gives new contributors a repeatable path, but production or packaged
 setups can point the kernelspec at any Eshkol installation.
 
+Linux release binaries may require system BLAS/LAPACK and LLVM runtime
+libraries. The CI workflow documents the Ubuntu packages currently needed for
+the downloaded Eshkol release.
+
 ## Manage The Kernelspec
 
 List installed kernels:

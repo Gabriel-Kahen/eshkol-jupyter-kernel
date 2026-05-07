@@ -49,7 +49,15 @@ jobs:
       - name: Install Eshkol runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libblas3 liblapack3
+          sudo apt-get install -y ca-certificates gnupg wget
+          sudo install -m 0755 -d /etc/apt/keyrings
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/apt.llvm.org.gpg
+          codename="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.gpg] https://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-21 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update
+          sudo apt-get install -y libblas3 liblapack3 libllvm21
 
       - name: Install package
         run: |
