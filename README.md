@@ -28,39 +28,48 @@ release into a user cache directory.
 
 ## Quick Start
 
-Create a Python environment and install the package from PyPI:
+Create a Python environment, install the kernel package and JupyterLab, then run
+the setup command:
 
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install eshkol-kernel==0.1.0a2
-```
-
-Set up the Eshkol runtime and Jupyter kernelspec:
-
-```bash
+python -m pip install eshkol-kernel==0.1.0a2 jupyterlab
 eshkol-kernel-setup --user
+python -m jupyter lab
 ```
 
-By default this uses an existing `eshkol-repl` on `PATH`; if none is found, it
-downloads Eshkol into a user cache directory, installs the kernelspec, and runs
-the doctor checks. To force a specific runtime:
+Create or open a notebook and select the `Eshkol` kernel. Try:
+
+```scheme
+(+ 1 2 3)
+```
+
+The setup command uses an existing `eshkol-repl` on `PATH` when available. If it
+cannot find one, it downloads the latest compatible Eshkol release into a user
+cache directory, installs the Jupyter kernelspec, runs diagnostics, and prints
+the next command to launch Jupyter.
+
+To force a specific runtime:
 
 ```bash
 eshkol-kernel-setup --user --eshkol-repl /absolute/path/to/eshkol-repl
 ```
 
-Open JupyterLab:
+## Runtime Options
+
+Most users should configure the kernel with `eshkol-kernel-setup`. Useful setup
+options:
 
 ```bash
-python -m pip install jupyterlab
-python -m jupyter lab
+eshkol-kernel-setup --user
+eshkol-kernel-setup --user --eshkol-repl /absolute/path/to/eshkol-repl
+eshkol-kernel-setup --user --runtime-dir ~/.cache/eshkol-kernel/eshkol
+eshkol-kernel-setup --user --tag latest --flavor lite
+eshkol-kernel-setup --sys-prefix
+eshkol-kernel-setup --no-download
 ```
-
-Create or open a notebook and select the `Eshkol` kernel.
-
-## Runtime Options
 
 The kernel reads these environment variables when Jupyter starts it:
 
@@ -70,8 +79,9 @@ The kernel reads these environment variables when Jupyter starts it:
 - `ESHKOL_KERNEL_TIMEOUT`: per-cell execution timeout in seconds (default: `30`)
 - `ESHKOL_KERNEL_START_TIMEOUT`: REPL startup timeout in seconds (default: `10`)
 
-If Jupyter launches from an environment that does not inherit your shell
-variables, bake the runtime path into the kernelspec:
+Lower-level commands remain available when you want manual control. If Jupyter
+launches from an environment that does not inherit your shell variables, bake
+the runtime path into the kernelspec:
 
 ```bash
 eshkol-kernel-install --user --eshkol-repl /absolute/path/to/eshkol-repl
@@ -93,7 +103,8 @@ the downloaded Eshkol release.
 
 ## Diagnose Setup
 
-Run the doctor command when Jupyter cannot start the kernel or Eshkol cells fail
+`eshkol-kernel-setup` runs the doctor checks automatically. Run the doctor
+command directly when Jupyter cannot start the kernel or Eshkol cells fail
 before evaluating code:
 
 ```bash
@@ -120,7 +131,13 @@ List installed kernels:
 jupyter kernelspec list
 ```
 
-Update or reinstall the default `Eshkol` kernelspec:
+Update or reinstall the default `Eshkol` kernelspec through the setup command:
+
+```bash
+eshkol-kernel-setup --user --eshkol-repl /absolute/path/to/eshkol-repl
+```
+
+Install just the kernelspec without fetching or running diagnostics:
 
 ```bash
 eshkol-kernel-install --user --eshkol-repl /absolute/path/to/eshkol-repl
@@ -203,7 +220,7 @@ a separate real Eshkol smoke test that downloads the release binary.
 Release publishing uses PyPI Trusted Publishing through GitHub Actions:
 
 - `Publish to TestPyPI` is a manual workflow for dry runs.
-- `Publish to PyPI` runs only for tags like `v0.1.0a1` or `v0.1.0`.
+- `Publish to PyPI` runs only for tags like `v0.1.0a2` or `v0.1.0`.
 - Both workflows build the package and run `twine check dist/*` before upload.
 
 Version `0.1.0a2` is published on
