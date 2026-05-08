@@ -88,6 +88,46 @@ def evaluate(source: str, definitions: dict[str, str]) -> None:
         )
         print("after")
         return
+    if source == "(rich-markdown)":
+        print(json.dumps({"type": "eshkol_display", "format": "markdown", "value": "**hello**"}))
+        return
+    if source == "(pretty-list)":
+        print(json.dumps({"type": "eshkol_pretty", "value": ["define", ["square", "x"], ["*", "x", "x"]]}))
+        return
+    if source == "(rich-table)":
+        print(
+            json.dumps(
+                {
+                    "type": "eshkol_table",
+                    "columns": ["n", "square"],
+                    "rows": [[1, 1], [2, 4], [3, 9]],
+                }
+            )
+        )
+        return
+    if source == "(rich-tree)":
+        print(json.dumps({"type": "eshkol_tree", "value": ["root", ["left"], ["right"]]}))
+        return
+    if source == "(rich-with-metadata)":
+        print(
+            json.dumps(
+                {
+                    "type": "eshkol_display",
+                    "format": "html",
+                    "value": "<strong>hello</strong>",
+                    "metadata": {"text/html": {"isolated": True}},
+                    "transient": {"display_id": "eshkol-demo"},
+                }
+            )
+        )
+        return
+    if source == "(two-rich-outputs)":
+        print(json.dumps({"type": "eshkol_display", "format": "text", "value": "first"}))
+        print(json.dumps({"type": "eshkol_display", "format": "text", "value": "second"}))
+        return
+    if source == "(invalid-rich-json)":
+        print('{"type": "eshkol_display", "format": "unknown", "value": "plain"}')
+        return
     if source == "(display-prompt-text)":
         print("value: eshkol> still user text")
         print("coords: [1,2]> still user text")

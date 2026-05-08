@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## 0.1.0a3 - 2026-05-08
+
+- Added an `eshkol` Pygments lexer for `.esk` files and rendered notebook output.
+- Added helper payloads for pretty printing, markdown/HTML/SVG/JSON/LaTeX/PNG display, tables, and trees.
+- Updated the kernel language metadata to advertise the Eshkol lexer instead of Scheme.
+
 ## 0.1.0a2 - 2026-05-08
 
 - Added `eshkol-kernel-setup` to find or download Eshkol, install the kernelspec, run diagnostics, and print next steps.

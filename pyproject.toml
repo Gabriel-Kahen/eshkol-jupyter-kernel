@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eshkol-kernel"
-version = "0.1.0a2"
+version = "0.1.0a3"
 description = "A Jupyter kernel for Eshkol backed by eshkol-repl."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,6 +29,7 @@ dependencies = [
   "jupyter-client>=8.6",
   "jupyter-core>=5.7",
   "pexpect>=4.9; platform_system != 'Windows'",
+  "Pygments>=2.14",
 ]
 
 [project.optional-dependencies]
@@ -48,6 +49,9 @@ eshkol-kernel-install = "eshkol_kernel.install:main"
 eshkol-kernel-fetch-runtime = "eshkol_kernel.fetch_runtime:main"
 eshkol-kernel-doctor = "eshkol_kernel.doctor:main"
 eshkol-kernel-setup = "eshkol_kernel.setup:main"
+
+[project.entry-points."pygments.lexers"]
+eshkol = "eshkol_kernel.lexer:EshkolLexer"
 
 [project.urls]
 Homepage = "https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel"

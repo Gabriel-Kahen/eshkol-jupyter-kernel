@@ -31,3 +31,13 @@ def test_kernel_preserves_mixed_output_order(tmp_path: Path) -> None:
         ("display_data", {"text/plain": "middle", "text/html": "<em>middle</em>"}),
         ("stdout", "after\n"),
     ]
+
+
+def test_kernel_sends_display_helper_data(tmp_path: Path) -> None:
+    with started_kernel(tmp_path, kernel_name="eshkol-helper-rich") as client:
+        reply, outputs = execute_and_collect(client, "(rich-table)")
+
+    assert reply["status"] == "ok"
+    assert outputs[0][0] == "display_data"
+    assert "text/html" in outputs[0][1]
+    assert "n | square" in outputs[0][1]["text/plain"]

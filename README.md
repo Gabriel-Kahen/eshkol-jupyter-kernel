@@ -10,11 +10,13 @@ long-lived `eshkol-repl` process.
 
 Alpha, but usable:
 
-- Published on PyPI as `eshkol-kernel` version `0.1.0a2`
+- Published on PyPI as `eshkol-kernel` version `0.1.0a3`
 - Stateful code execution through `eshkol-repl`
 - Multiline cell handling
 - Multiple top-level forms in one cell
 - Text streams, classified errors, and Jupyter `display_data` MIME bundles
+- Eshkol Pygments lexer for rendered notebooks and static exports
+- Pretty output, tables, trees, and common rich display MIME helpers
 - Completion for common Scheme/Eshkol forms plus symbols defined in successful cells
 - One-command setup via `eshkol-kernel-setup`
 - Kernel installation via `eshkol-kernel-install`
@@ -35,7 +37,7 @@ the setup command:
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install eshkol-kernel==0.1.0a2 jupyterlab
+python -m pip install eshkol-kernel==0.1.0a3 jupyterlab
 eshkol-kernel-setup --user
 python -m jupyter lab
 ```
@@ -158,6 +160,14 @@ Uninstall the default kernelspec:
 jupyter kernelspec uninstall eshkol
 ```
 
+## Syntax Highlighting
+
+The package registers an `eshkol` Pygments lexer for `.esk` files and rendered
+notebooks. The live notebook editor still uses Scheme-like CodeMirror behavior
+until a dedicated browser-side Eshkol mode exists, but exported notebooks,
+Sphinx/MkDocs pages, and other Pygments-based renderers can highlight Eshkol
+directly.
+
 ## Rich Display Output
 
 The kernel treats any single output line matching this JSON shape as a Jupyter
@@ -174,8 +184,24 @@ MIME bundle and publishes it as `display_data` instead of plain stdout:
 }
 ```
 
-This is a small bridge until Eshkol has a native notebook display API. Normal
-text output still goes to stdout.
+The kernel also understands explicit helper payloads. These are still one JSON
+object per output line, but are easier for Eshkol-side helper functions to emit:
+
+```json
+{"type":"eshkol_display","format":"markdown","value":"**hello**"}
+{"type":"eshkol_display","format":"html","value":"<strong>hello</strong>"}
+{"type":"eshkol_display","format":"svg","value":"<svg>...</svg>"}
+{"type":"eshkol_display","format":"json","value":{"answer":42}}
+{"type":"eshkol_pretty","value":["define",["square","x"],["*","x","x"]]}
+{"type":"eshkol_table","columns":["n","square"],"rows":[[1,1],[2,4]]}
+{"type":"eshkol_tree","value":["root",["left"],["right"]]}
+```
+
+Supported `eshkol_display` formats are `text`, `html`, `markdown`, `latex`,
+`svg`, `json`, `png`, and `png-base64`. The helper bridge always includes a
+`text/plain` fallback when it creates the MIME bundle. Normal text output still
+goes to stdout, and invalid helper payloads remain plain stdout instead of being
+silently rewritten.
 
 ## How It Works
 
@@ -220,10 +246,10 @@ a separate real Eshkol smoke test that downloads the release binary.
 Release publishing uses PyPI Trusted Publishing through GitHub Actions:
 
 - `Publish to TestPyPI` is a manual workflow for dry runs.
-- `Publish to PyPI` runs only for tags like `v0.1.0a2` or `v0.1.0`.
+- `Publish to PyPI` runs only for tags like `v0.1.0a3` or `v0.1.0`.
 - Both workflows build the package and run `twine check dist/*` before upload.
 
-Version `0.1.0a2` is published on
+Version `0.1.0a3` is published on
 [PyPI](https://pypi.org/project/eshkol-kernel/). See
 [docs/RELEASING.md](docs/RELEASING.md) for the release checklist.
 
@@ -231,6 +257,6 @@ Version `0.1.0a2` is published on
 
 - This package targets Unix-like systems where `pexpect` can allocate a
   pseudo-terminal. macOS and Linux are the intended platforms.
-- Rich display output currently depends on the JSON line convention above.
+- Rich display helpers currently depend on the JSON line convention above.
 - Interrupt behavior depends on the native REPL's signal handling and the
   frontend. Restarting the kernel is the reliable reset path.

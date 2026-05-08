@@ -45,6 +45,10 @@ def test_completion() -> None:
     assert "define" in reply["matches"]
 
 
+def test_language_info_uses_eshkol_pygments_lexer() -> None:
+    assert EshkolKernel.language_info["pygments_lexer"] == "eshkol"
+
+
 def test_completion_includes_successful_definitions() -> None:
     session = DummySession(ExecutionResult())
     kernel = EshkolKernel(session_factory=lambda: session)  # type: ignore[arg-type]

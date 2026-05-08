@@ -23,7 +23,7 @@ class EshkolKernel(Kernel):
         "mimetype": "text/x-eshkol",
         "file_extension": ".esk",
         "codemirror_mode": "scheme",
-        "pygments_lexer": "scheme",
+        "pygments_lexer": "eshkol",
     }
     banner = "Eshkol kernel backed by eshkol-repl"
     help_links = [

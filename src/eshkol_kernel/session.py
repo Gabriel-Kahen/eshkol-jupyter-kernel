@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from shutil import which
 from typing import Any
 
+from .display import parse_display_payload
 from .forms import FormError, split_top_level_forms
 
 try:
@@ -306,16 +307,8 @@ def parse_display_data(line: str) -> DisplayData | None:
     if not isinstance(payload, dict):
         return None
 
-    if payload.get("type") != "display_data":
+    parsed = parse_display_payload(payload)
+    if parsed is None:
         return None
-
-    data = payload.get("data")
-    metadata = payload.get("metadata", {})
-    transient = payload.get("transient")
-    if not isinstance(data, dict):
-        return None
-    if not isinstance(metadata, dict):
-        metadata = {}
-    if transient is not None and not isinstance(transient, dict):
-        transient = None
+    data, metadata, transient = parsed
     return DisplayData(data=data, metadata=metadata, transient=transient)

@@ -109,6 +109,79 @@ def test_execute_preserves_mixed_output_order_events() -> None:
     assert result.output_events[2].text == "after\n"
 
 
+def test_execute_extracts_display_helper_output() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(rich-markdown)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.stdout == ""
+    assert result.display_data[0].data == {"text/plain": "**hello**", "text/markdown": "**hello**"}
+
+
+def test_execute_extracts_pretty_output() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(pretty-list)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.stdout == ""
+    assert result.display_data[0].data["text/plain"] == "(define (square x) (* x x))"
+
+
+def test_execute_extracts_table_output() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(rich-table)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert "n | square" in result.display_data[0].data["text/plain"]
+    assert "<table>" in result.display_data[0].data["text/html"]
+
+
+def test_execute_preserves_multiple_display_helper_events() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(two-rich-outputs)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.stdout == ""
+    assert [event.kind for event in result.output_events] == ["display_data", "display_data"]
+    assert [display.data["text/plain"] for display in result.display_data] == ["first", "second"]
+
+
+def test_execute_keeps_invalid_display_helper_as_stdout() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(invalid-rich-json)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert "unknown" in result.stdout
+    assert result.display_data == []
+
+
+def test_execute_preserves_display_metadata_and_transient() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(rich-with-metadata)")
+    finally:
+        session.close()
+
+    assert result.ok
+    assert result.display_data[0].metadata == {"text/html": {"isolated": True}}
+    assert result.display_data[0].transient == {"display_id": "eshkol-demo"}
+
+
 def test_execute_does_not_strip_prompt_text_from_stdout() -> None:
     session = make_session()
     try:
