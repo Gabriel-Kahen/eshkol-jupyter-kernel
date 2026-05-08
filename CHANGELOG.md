@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## Unreleased
+## 0.1.0a4 - 2026-05-08
 
 - Improved execution errors to stop at the failing top-level form and report its cell line, column, and source excerpt.
 

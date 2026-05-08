@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eshkol-kernel"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "A Jupyter kernel for Eshkol backed by eshkol-repl."
 readme = "README.md"
 requires-python = ">=3.9"

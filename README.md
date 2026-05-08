@@ -20,7 +20,7 @@ computational notes.
 - One-command setup that can find or download an Eshkol runtime
 - Local diagnostics for runtime, kernelspec, shared libraries, and smoke execution
 
-The package is currently alpha but usable. Version `0.1.0a3` is published on
+The package is currently alpha but usable. Version `0.1.0a4` is published on
 [PyPI](https://pypi.org/project/eshkol-kernel/).
 
 ## Install
@@ -32,7 +32,7 @@ start Jupyter:
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install eshkol-kernel==0.1.0a3 jupyterlab
+python -m pip install eshkol-kernel==0.1.0a4 jupyterlab
 eshkol-kernel-setup --user
 python -m jupyter lab
 ```
