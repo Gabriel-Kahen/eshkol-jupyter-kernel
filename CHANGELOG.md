@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented here.
 
+## 0.1.0a5 - 2026-05-08
+
+- Closed PTY resources more aggressively after timed-out REPL sessions so recovery starts from a clean child process.
+
 ## 0.1.0a4 - 2026-05-08
 
 - Improved execution errors to stop at the failing top-level form and report its cell line, column, and source excerpt.

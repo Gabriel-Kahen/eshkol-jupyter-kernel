@@ -34,7 +34,7 @@
   <text x="82" y="292" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">tests</text>
   <rect x="66" y="620" width="192" height="52" rx="9" fill="#fff7ed" stroke="#fed7aa"/>
   <text x="84" y="642" fill="#9a3412" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12" font-weight="800">eshkol-kernel</text>
-  <text x="84" y="660" fill="#9a3412" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12">PyPI alpha 0.1.0a3</text>
+  <text x="84" y="660" fill="#9a3412" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12">PyPI alpha 0.1.0a5</text>
 
   <rect x="318" y="118" width="876" height="578" rx="12" fill="#ffffff" stroke="#d8dee8"/>
   <rect x="318" y="118" width="876" height="52" rx="12" fill="#fbfcfe"/>

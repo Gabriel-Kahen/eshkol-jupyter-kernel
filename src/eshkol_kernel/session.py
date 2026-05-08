@@ -220,6 +220,8 @@ class EshkolReplSession:
                 child.expect(pexpect.EOF, timeout=2)
             except Exception:
                 child.terminate(force=True)
+        if not child.closed:
+            child.close(force=True)
 
     def _execute_form(self, form: str) -> str:
         child = self._require_child()
