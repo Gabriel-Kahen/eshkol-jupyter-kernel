@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented here.
 
+## Unreleased
+
+- Improved execution errors to stop at the failing top-level form and report its cell line, column, and source excerpt.
+
 ## 0.1.0a3 - 2026-05-08
 
 - Added an `eshkol` Pygments lexer for `.esk` files and rendered notebook output.

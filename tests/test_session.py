@@ -81,6 +81,59 @@ def test_execute_classifies_syntax_errors() -> None:
     assert "unexpected closing delimiter" in result.stderr
 
 
+def test_execute_reports_failing_form_context() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(define x 1)\n(runtime-problem)\n(define after 2)\nafter")
+        follow_up = session.execute("after")
+    finally:
+        session.close()
+
+    assert not result.ok
+    assert result.error_name == "EshkolRuntimeError"
+    assert result.error_form_index == 2
+    assert result.error_form_count == 4
+    assert result.error_form == "(runtime-problem)"
+    assert result.error_line == 2
+    assert result.error_column == 1
+    assert "EshkolRuntimeError while evaluating form 2 of 4 (line 2, column 1):" in result.stderr
+    assert "2 | (runtime-problem)" in result.stderr
+    assert "    ^" in result.stderr
+    assert "runtime-error: undefined variable" in result.stderr
+    assert "(define after 2)" not in result.stderr
+    assert follow_up.ok
+    assert follow_up.stdout == "ok: after\n"
+
+
+def test_execute_error_context_preserves_cell_indentation() -> None:
+    session = make_session()
+    try:
+        result = session.execute("(define x 1)\n  (runtime-problem)")
+    finally:
+        session.close()
+
+    assert not result.ok
+    assert result.error_line == 2
+    assert result.error_column == 3
+    assert "2 |   (runtime-problem)" in result.stderr
+    assert "      ^" in result.stderr
+
+
+def test_execute_preserves_prior_stdout_before_error() -> None:
+    session = make_session()
+    try:
+        result = session.execute('(display "before")\n(runtime-problem)\n(display "after")')
+    finally:
+        session.close()
+
+    assert not result.ok
+    assert result.stdout == "before\n"
+    assert result.output_events[0].kind == "stdout"
+    assert result.output_events[0].text == "before\n"
+    assert "runtime-error: undefined variable" in result.stderr
+    assert "after" not in result.stderr
+
+
 def test_execute_extracts_rich_display_data() -> None:
     session = make_session()
     try:

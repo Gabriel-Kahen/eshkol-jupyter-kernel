@@ -12,7 +12,7 @@ from shutil import which
 from typing import Any
 
 from .display import parse_display_payload
-from .forms import FormError, split_top_level_forms
+from .forms import FormError, FormSource, split_top_level_form_sources
 
 try:
     import pexpect
@@ -55,6 +55,11 @@ class ExecutionResult:
     error_name: str = "EshkolError"
     display_data: list[DisplayData] = field(default_factory=list)
     output_events: list[OutputEvent] = field(default_factory=list)
+    error_form_index: int | None = None
+    error_form_count: int | None = None
+    error_form: str | None = None
+    error_line: int | None = None
+    error_column: int | None = None
 
 
 @dataclass
@@ -141,7 +146,7 @@ class EshkolReplSession:
 
     def execute(self, code: str) -> ExecutionResult:
         try:
-            forms = split_top_level_forms(code)
+            forms = split_top_level_form_sources(code)
         except FormError as exc:
             return ExecutionResult(stderr=str(exc), ok=False, error_name=exc.__class__.__name__)
 
@@ -149,23 +154,49 @@ class EshkolReplSession:
             return ExecutionResult()
 
         self.start()
-        output_parts: list[str] = []
-        for form in forms:
-            output_parts.append(self._execute_form(form))
+        text_parts: list[str] = []
+        display_data: list[DisplayData] = []
+        output_events: list[OutputEvent] = []
 
-        stdout = "\n".join(part for part in output_parts if part).strip()
-        text, display_data, output_events = extract_display_data(stdout)
-        error_name = classify_error(text)
-        if error_name:
-            return ExecutionResult(
-                stderr=f"{text}\n" if text else "",
-                ok=False,
-                error_name=error_name,
-                display_data=display_data,
-                output_events=output_events,
-            )
+        for index, form in enumerate(forms, start=1):
+            output = self._execute_form(form.text)
+            text, form_display_data, form_output_events = extract_display_data(output)
+            error_name = classify_error(text)
+            if error_name:
+                error_line, error_column = line_column(code, form.start)
+                display_data.extend(form_display_data)
+                output_events.extend(event for event in form_output_events if event.kind == "display_data")
+                stderr = format_error_context(
+                    error_text=text,
+                    error_name=error_name,
+                    form=form,
+                    form_index=index,
+                    form_count=len(forms),
+                    code=code,
+                )
+                stdout = "\n".join(part for part in text_parts if part).strip()
+                return ExecutionResult(
+                    stdout=f"{stdout}\n" if stdout else "",
+                    stderr=stderr,
+                    ok=False,
+                    error_name=error_name,
+                    display_data=display_data,
+                    output_events=output_events,
+                    error_form_index=index,
+                    error_form_count=len(forms),
+                    error_form=form.text,
+                    error_line=error_line,
+                    error_column=error_column,
+                )
+
+            if text:
+                text_parts.append(text)
+            display_data.extend(form_display_data)
+            output_events.extend(form_output_events)
+
+        stdout = "\n".join(part for part in text_parts if part).strip()
         return ExecutionResult(
-            stdout=f"{text}\n" if text else "",
+            stdout=f"{stdout}\n" if stdout else "",
             display_data=display_data,
             output_events=output_events,
         )
@@ -270,6 +301,47 @@ def classify_error(text: str) -> str | None:
         if pattern.search(text):
             return error_name
     return None
+
+
+def format_error_context(
+    *,
+    error_text: str,
+    error_name: str,
+    form: FormSource,
+    form_index: int,
+    form_count: int,
+    code: str,
+) -> str:
+    line, column = line_column(code, form.start)
+    header = f"{error_name} while evaluating form {form_index} of {form_count} (line {line}, column {column}):"
+    return f"{header}\n{format_source_excerpt(form, code)}\n\n{error_text.strip()}\n"
+
+
+def format_source_excerpt(form: FormSource, code: str, *, max_lines: int = 8) -> str:
+    start_line, start_column = line_column(code, form.start)
+    end_line, _ = line_column(code, max(form.start, form.end - 1))
+    source_lines = code.splitlines() or [""]
+    visible_lines = source_lines[start_line - 1 : min(end_line, start_line + max_lines - 1)]
+    last_line = start_line + len(visible_lines) - 1
+    width = len(str(last_line))
+    rendered: list[str] = []
+    for offset, line in enumerate(visible_lines):
+        line_number = start_line + offset
+        prefix = f"{line_number:>{width}} | "
+        rendered.append(f"{prefix}{line}")
+        if offset == 0:
+            rendered.append(f"{' ' * len(prefix)}{' ' * max(0, start_column - 1)}^")
+    if end_line - start_line + 1 > max_lines:
+        rendered.append(f"{' ' * width} | ...")
+    return "\n".join(rendered)
+
+
+def line_column(code: str, index: int) -> tuple[int, int]:
+    index = max(0, min(index, len(code)))
+    line = code.count("\n", 0, index) + 1
+    line_start = code.rfind("\n", 0, index) + 1
+    column = index - line_start + 1
+    return line, column
 
 
 def extract_display_data(output: str) -> tuple[str, list[DisplayData], list[OutputEvent]]:

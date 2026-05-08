@@ -21,7 +21,18 @@ class Completeness:
     indent: str = ""
 
 
+@dataclass(frozen=True)
+class FormSource:
+    text: str
+    start: int
+    end: int
+
+
 def split_top_level_forms(code: str) -> list[str]:
+    return [form.text for form in split_top_level_form_sources(code)]
+
+
+def split_top_level_form_sources(code: str) -> list[FormSource]:
     """Split a notebook cell into top-level Eshkol forms.
 
     The native REPL parses one form per evaluation. Notebook users naturally
@@ -29,7 +40,7 @@ def split_top_level_forms(code: str) -> list[str]:
     wrapper sends them one at a time while preserving REPL state.
     """
 
-    forms: list[str] = []
+    forms: list[FormSource] = []
     start: int | None = None
     depth = 0
     in_string = False
@@ -66,7 +77,7 @@ def split_top_level_forms(code: str) -> list[str]:
             if char == "\n":
                 in_comment = False
                 if atom_mode and start is not None:
-                    _append_form(forms, code[start:index])
+                    _append_form(forms, code[start:index], start)
                     start = None
                     atom_mode = False
             continue
@@ -95,7 +106,7 @@ def split_top_level_forms(code: str) -> list[str]:
 
         if char == ";":
             if atom_mode and start is not None:
-                _append_form(forms, code[start:index])
+                _append_form(forms, code[start:index], start)
                 start = None
                 atom_mode = False
             in_comment = True
@@ -107,7 +118,7 @@ def split_top_level_forms(code: str) -> list[str]:
 
         if atom_mode:
             if char.isspace():
-                _append_form(forms, code[start:index])
+                _append_form(forms, code[start:index], start)
                 start = None
                 atom_mode = False
             continue
@@ -121,7 +132,7 @@ def split_top_level_forms(code: str) -> list[str]:
             if depth < 0:
                 raise UnmatchedDelimiter("Unmatched closing delimiter.")
             if depth == 0 and start is not None:
-                _append_form(forms, code[start : index + 1])
+                _append_form(forms, code[start : index + 1], start)
                 start = None
             continue
 
@@ -134,7 +145,7 @@ def split_top_level_forms(code: str) -> list[str]:
     if depth < 0:
         raise UnmatchedDelimiter("Unmatched closing delimiter.")
     if start is not None:
-        _append_form(forms, code[start:])
+        _append_form(forms, code[start:], start)
 
     return forms
 
@@ -149,7 +160,9 @@ def check_completeness(code: str) -> Completeness:
     return Completeness(status="complete")
 
 
-def _append_form(forms: list[str], raw: str) -> None:
+def _append_form(forms: list[FormSource], raw: str, start: int) -> None:
     form = raw.strip()
     if form:
-        forms.append(form)
+        leading = len(raw) - len(raw.lstrip())
+        end = start + len(raw.rstrip())
+        forms.append(FormSource(text=form, start=start + leading, end=end))

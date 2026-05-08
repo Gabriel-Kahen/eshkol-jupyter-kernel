@@ -140,13 +140,14 @@ class EshkolKernel(Kernel):
             )
         if not result.ok:
             text = result.stderr or result.stdout or "Eshkol execution failed."
+            traceback = text.splitlines()
             self.send_response(
                 self.iopub_socket,
                 "error",
                 {
                     "ename": result.error_name,
-                    "evalue": text.strip(),
-                    "traceback": text.splitlines(),
+                    "evalue": traceback[-1] if traceback else text.strip(),
+                    "traceback": traceback,
                 },
             )
 

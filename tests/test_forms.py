@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from eshkol_kernel.forms import IncompleteInput, UnmatchedDelimiter, check_completeness, split_top_level_forms
+from eshkol_kernel.forms import (
+    IncompleteInput,
+    UnmatchedDelimiter,
+    check_completeness,
+    split_top_level_form_sources,
+    split_top_level_forms,
+)
 
 
 def test_split_multiple_top_level_forms() -> None:
@@ -17,6 +23,16 @@ def test_split_keeps_multiline_form_together() -> None:
 (square 4)
 """
     assert split_top_level_forms(code) == ["(define (square x)\n  (* x x))", "(square 4)"]
+
+
+def test_split_reports_form_source_spans() -> None:
+    code = "; heading\n(define x 1)\n\n(+ x 2)"
+
+    forms = split_top_level_form_sources(code)
+
+    assert [form.text for form in forms] == ["(define x 1)", "(+ x 2)"]
+    assert code[forms[0].start : forms[0].end] == "(define x 1)"
+    assert code[forms[1].start : forms[1].end] == "(+ x 2)"
 
 
 def test_split_ignores_top_level_comments() -> None:

@@ -41,3 +41,17 @@ def test_kernel_sends_display_helper_data(tmp_path: Path) -> None:
     assert outputs[0][0] == "display_data"
     assert "text/html" in outputs[0][1]
     assert "n | square" in outputs[0][1]["text/plain"]
+
+
+def test_kernel_error_includes_failing_form_context(tmp_path: Path) -> None:
+    with started_kernel(tmp_path, kernel_name="eshkol-error-context") as client:
+        reply, outputs = execute_and_collect(client, "(define x 1)\n(runtime-problem)\n(define after 2)")
+
+    assert reply["status"] == "error"
+    assert reply["ename"] == "EshkolRuntimeError"
+    assert "form 2 of 3" in "\n".join(reply["traceback"])
+    assert "2 | (runtime-problem)" in "\n".join(reply["traceback"])
+    errors = [payload for kind, payload in outputs if kind == "error"]
+    assert errors
+    assert errors[0]["ename"] == "EshkolRuntimeError"
+    assert errors[0]["evalue"] == "runtime-error: undefined variable"
