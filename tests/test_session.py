@@ -263,6 +263,7 @@ def test_execute_recovers_after_timeout() -> None:
     try:
         with pytest.raises(EshkolSessionError, match="timed out"):
             session.execute("(hang)")
+        session.timeout = 5
         result = session.execute("(+ 1 2 3)")
     finally:
         session.close()
