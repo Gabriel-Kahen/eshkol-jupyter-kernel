@@ -1,77 +1,83 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
-  <title id="title">Eshkol running in JupyterLab</title>
-  <desc id="desc">A polished JupyterLab notebook screen showing Eshkol cells, rich output, and a connected Eshkol kernel.</desc>
+  <title id="title">Eshkol notebook in JupyterLab</title>
+  <desc id="desc">A JupyterLab notebook showing Eshkol code, syntax highlighting, rich display output, and a connected Eshkol kernel.</desc>
   <defs>
-    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f8fafc"/>
-      <stop offset="1" stop-color="#edf2f7"/>
-    </linearGradient>
     <linearGradient id="topbar" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#f37726"/>
       <stop offset="1" stop-color="#d95f12"/>
     </linearGradient>
-    <filter id="shadow" x="-8%" y="-8%" width="116%" height="124%">
-      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#233044" flood-opacity="0.16"/>
+    <filter id="shadow" x="-6%" y="-8%" width="112%" height="120%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#162033" flood-opacity="0.16"/>
     </filter>
   </defs>
 
-  <rect width="1280" height="760" fill="url(#page)"/>
-  <rect x="40" y="36" width="1200" height="688" rx="18" fill="#ffffff" filter="url(#shadow)"/>
+  <rect width="1280" height="760" fill="#eef2f7"/>
+  <rect x="46" y="34" width="1188" height="690" rx="18" fill="#ffffff" filter="url(#shadow)"/>
+  <rect x="46" y="34" width="1188" height="54" rx="18" fill="url(#topbar)"/>
+  <path d="M46 68h1188v28H46z" fill="url(#topbar)"/>
+  <circle cx="78" cy="61" r="7" fill="#ffffff" opacity="0.95"/>
+  <circle cx="102" cy="61" r="7" fill="#ffffff" opacity="0.72"/>
+  <circle cx="126" cy="61" r="7" fill="#ffffff" opacity="0.5"/>
+  <text x="160" y="68" fill="#ffffff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">JupyterLab</text>
+  <rect x="1014" y="48" width="178" height="28" rx="14" fill="#ffffff" opacity="0.18"/>
+  <circle cx="1034" cy="62" r="5" fill="#ffffff"/>
+  <text x="1048" y="68" fill="#ffffff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="700">Kernel: Eshkol</text>
 
-  <rect x="40" y="36" width="1200" height="54" rx="18" fill="url(#topbar)"/>
-  <path d="M40 72h1200v28H40z" fill="url(#topbar)"/>
-  <circle cx="72" cy="63" r="7" fill="#fff" opacity="0.95"/>
-  <circle cx="96" cy="63" r="7" fill="#fff" opacity="0.72"/>
-  <circle cx="120" cy="63" r="7" fill="#fff" opacity="0.5"/>
-  <text x="154" y="70" fill="#ffffff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">JupyterLab</text>
-  <rect x="1030" y="49" width="168" height="28" rx="14" fill="#fff" opacity="0.16"/>
-  <circle cx="1050" cy="63" r="5" fill="#ffffff"/>
-  <text x="1064" y="69" fill="#ffffff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="700">Eshkol connected</text>
+  <rect x="46" y="88" width="238" height="636" fill="#f8fafc"/>
+  <rect x="283" y="88" width="1" height="636" fill="#d9dee7"/>
+  <text x="72" y="128" fill="#243044" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="800">Project</text>
+  <rect x="64" y="152" width="196" height="38" rx="8" fill="#e9f0f8" stroke="#d6e0ec"/>
+  <circle cx="82" cy="171" r="5" fill="#f37726"/>
+  <text x="96" y="177" fill="#1f2937" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="650">eshkol_demo.ipynb</text>
+  <text x="82" y="224" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">examples</text>
+  <text x="82" y="258" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">src/eshkol_kernel</text>
+  <text x="82" y="292" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">tests</text>
+  <rect x="66" y="620" width="192" height="52" rx="9" fill="#fff7ed" stroke="#fed7aa"/>
+  <text x="84" y="642" fill="#9a3412" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12" font-weight="800">eshkol-kernel</text>
+  <text x="84" y="660" fill="#9a3412" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12">PyPI alpha 0.1.0a3</text>
 
-  <rect x="40" y="90" width="242" height="634" fill="#f8fafc"/>
-  <rect x="281" y="90" width="1" height="634" fill="#d9dee7"/>
-  <text x="70" y="132" fill="#263241" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="800">Files</text>
-  <rect x="64" y="156" width="194" height="38" rx="8" fill="#e9f0f8" stroke="#d6e0ec"/>
-  <circle cx="82" cy="175" r="5" fill="#f37726"/>
-  <text x="96" y="181" fill="#1f2937" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="650">hello_eshkol.ipynb</text>
-  <text x="82" y="226" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">examples</text>
-  <text x="82" y="260" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">src/eshkol_kernel</text>
-  <text x="82" y="294" fill="#647084" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14">tests</text>
+  <rect x="318" y="118" width="876" height="578" rx="12" fill="#ffffff" stroke="#d8dee8"/>
+  <rect x="318" y="118" width="876" height="52" rx="12" fill="#fbfcfe"/>
+  <path d="M318 158h876v12H318z" fill="#fbfcfe"/>
+  <rect x="318" y="169" width="876" height="1" fill="#d8dee8"/>
+  <text x="350" y="150" fill="#202938" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="760">eshkol_demo.ipynb</text>
+  <rect x="968" y="132" width="184" height="24" rx="12" fill="#e7f6ed" stroke="#c8e7d3"/>
+  <circle cx="984" cy="144" r="5" fill="#238a45"/>
+  <text x="998" y="149" fill="#196033" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12" font-weight="760">eshkol-repl connected</text>
 
-  <rect x="314" y="124" width="880" height="558" rx="12" fill="#ffffff" stroke="#d8dee8"/>
-  <rect x="314" y="124" width="880" height="52" rx="12" fill="#fbfcfe"/>
-  <path d="M314 164h880v12H314z" fill="#fbfcfe"/>
-  <rect x="314" y="175" width="880" height="1" fill="#d8dee8"/>
-  <text x="346" y="156" fill="#202938" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="760">hello_eshkol.ipynb</text>
-  <rect x="996" y="138" width="158" height="24" rx="12" fill="#e7f6ed" stroke="#c8e7d3"/>
-  <circle cx="1012" cy="150" r="5" fill="#238a45"/>
-  <text x="1026" y="155" fill="#196033" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12" font-weight="760">Kernel: Eshkol</text>
-
-  <text x="354" y="224" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="31" font-weight="800">Hello Eshkol</text>
-  <text x="354" y="256" fill="#667085" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15">Stateful Eshkol code running through a standard Jupyter kernel.</text>
+  <text x="354" y="214" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="30" font-weight="820">Eshkol notebooks</text>
+  <text x="354" y="246" fill="#667085" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15">Stateful code cells, rendered syntax highlighting, and rich display output.</text>
 
   <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">
-    <rect x="354" y="292" width="792" height="74" rx="8" fill="#f6f8fb" stroke="#d9e0ea"/>
-    <rect x="354" y="292" width="78" height="74" rx="8" fill="#eef3f8"/>
-    <path d="M426 292h8v74h-8z" fill="#f6f8fb"/>
-    <text x="374" y="336" fill="#667085">In [1]</text>
-    <text x="456" y="336" fill="#111827">(+ 1 2 3)</text>
-    <rect x="432" y="378" width="714" height="42" rx="8" fill="#ffffff" stroke="#e0e6ef"/>
-    <text x="456" y="405" fill="#111827">6</text>
+    <rect x="354" y="286" width="792" height="98" rx="8" fill="#f6f8fb" stroke="#d9e0ea"/>
+    <rect x="354" y="286" width="78" height="98" rx="8" fill="#eef3f8"/>
+    <path d="M426 286h8v98h-8z" fill="#f6f8fb"/>
+    <text x="374" y="340" fill="#667085">In [1]</text>
+    <text x="456" y="322" fill="#7c3aed">(define</text>
+    <text x="520" y="322" fill="#111827">(square x)</text>
+    <text x="456" y="352" fill="#2563eb">(*</text>
+    <text x="482" y="352" fill="#111827">x x))</text>
+    <rect x="432" y="398" width="714" height="42" rx="8" fill="#ffffff" stroke="#e0e6ef"/>
+    <text x="456" y="425" fill="#111827">square</text>
 
-    <rect x="354" y="448" width="792" height="102" rx="8" fill="#f6f8fb" stroke="#d9e0ea"/>
-    <rect x="354" y="448" width="78" height="102" rx="8" fill="#eef3f8"/>
-    <path d="M426 448h8v102h-8z" fill="#f6f8fb"/>
-    <text x="374" y="506" fill="#667085">In [2]</text>
-    <text x="456" y="486" fill="#111827">(define x 41)</text>
-    <text x="456" y="516" fill="#111827">(+ x 1)</text>
-    <rect x="432" y="562" width="714" height="42" rx="8" fill="#ffffff" stroke="#e0e6ef"/>
-    <text x="456" y="589" fill="#111827">42</text>
+    <rect x="354" y="468" width="792" height="84" rx="8" fill="#f6f8fb" stroke="#d9e0ea"/>
+    <rect x="354" y="468" width="78" height="84" rx="8" fill="#eef3f8"/>
+    <path d="M426 468h8v84h-8z" fill="#f6f8fb"/>
+    <text x="374" y="516" fill="#667085">In [2]</text>
+    <text x="456" y="506" fill="#2563eb">(square</text>
+    <text x="526" y="506" fill="#111827">4)</text>
+    <rect x="432" y="566" width="360" height="74" rx="8" fill="#ffffff" stroke="#dfe6ef"/>
+    <rect x="432" y="566" width="360" height="28" rx="8" fill="#eef6ff"/>
+    <text x="458" y="586" fill="#1d4ed8">n</text>
+    <text x="562" y="586" fill="#1d4ed8">square</text>
+    <text x="458" y="616" fill="#111827">4</text>
+    <text x="562" y="616" fill="#111827">16</text>
   </g>
 
-  <rect x="878" y="562" width="228" height="42" rx="8" fill="#eaf6ef" stroke="#cbe8d4"/>
-  <text x="904" y="589" fill="#176534" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="760">state persisted across cells</text>
+  <rect x="828" y="566" width="282" height="74" rx="8" fill="#ecfdf5" stroke="#bbf7d0"/>
+  <text x="850" y="594" fill="#166534" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="800">display_data bridge</text>
+  <text x="850" y="618" fill="#166534" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13">HTML, markdown, JSON, tables</text>
 
-  <rect x="354" y="628" width="792" height="1" fill="#e1e7ef"/>
-  <text x="354" y="654" fill="#8a94a6" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13">Ready - Python package: eshkol-kernel - Runtime: eshkol-repl</text>
+  <rect x="354" y="664" width="792" height="1" fill="#e1e7ef"/>
+  <text x="354" y="688" fill="#8a94a6" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13">Wrapper kernel - runtime: eshkol-repl - highlighting: Pygments lexer</text>
 </svg>
