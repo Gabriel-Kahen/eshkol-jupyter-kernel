@@ -26,20 +26,36 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    repl = install_release_runtime(
+        tag=args.tag,
+        flavor=args.flavor,
+        output=Path(args.output),
+        timeout=args.timeout,
+    )
+    print(f"eshkol-repl: {repl}")
+    return 0
 
-    release = fetch_release(args.tag, timeout=args.timeout)
-    asset = choose_asset(release, args.flavor)
-    output = Path(args.output).resolve()
+
+def install_release_runtime(
+    *,
+    tag: str = "latest",
+    flavor: str = "lite",
+    output: Path | str = Path(".external/eshkol"),
+    timeout: float = DEFAULT_TIMEOUT,
+) -> Path:
+    release = fetch_release(tag, timeout=timeout)
+    asset = choose_asset(release, flavor)
+    output = Path(output).expanduser().resolve()
     downloads = output.parent / "downloads"
     downloads.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
 
     archive = downloads / asset["name"]
     sums = downloads / "SHA256SUMS.txt"
-    download(asset["browser_download_url"], archive, timeout=args.timeout)
+    download(asset["browser_download_url"], archive, timeout=timeout)
     sums_asset = next((item for item in release["assets"] if item["name"] == "SHA256SUMS.txt"), None)
     if sums_asset:
-        download(sums_asset["browser_download_url"], sums, timeout=args.timeout)
+        download(sums_asset["browser_download_url"], sums, timeout=timeout)
         verify_from_sums(archive, sums)
     elif asset.get("digest", "").startswith("sha256:"):
         verify_digest(archive, asset["digest"].split(":", 1)[1])
@@ -58,8 +74,7 @@ def main(argv: list[str] | None = None) -> int:
 
     repl = output / "bin" / "eshkol-repl"
     print(f"Installed {asset['name']} to {output}")
-    print(f"eshkol-repl: {repl}")
-    return 0
+    return repl
 
 
 def fetch_release(tag: str, *, timeout: float = DEFAULT_TIMEOUT) -> dict[str, Any]:

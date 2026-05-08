@@ -10,21 +10,21 @@ long-lived `eshkol-repl` process.
 
 Alpha, but usable:
 
-- Published on PyPI as `eshkol-kernel` version `0.1.0a1`
+- Published on PyPI as `eshkol-kernel` version `0.1.0a2`
 - Stateful code execution through `eshkol-repl`
 - Multiline cell handling
 - Multiple top-level forms in one cell
 - Text streams, classified errors, and Jupyter `display_data` MIME bundles
 - Completion for common Scheme/Eshkol forms plus symbols defined in successful cells
+- One-command setup via `eshkol-kernel-setup`
 - Kernel installation via `eshkol-kernel-install`
 - Runtime download helper via `eshkol-kernel-fetch-runtime`
 - Setup diagnostics via `eshkol-kernel-doctor`
 - Unit, Jupyter protocol, notebook execution, packaging, and real-runtime smoke tests
 
 This package does not vendor Eshkol itself. You can point it at an existing
-`eshkol-repl`, or use the fetch command below to download a local development
-runtime into `.external/`. The `.external/` directory is intentionally ignored
-by git.
+`eshkol-repl`, or let `eshkol-kernel-setup` download the latest compatible
+release into a user cache directory.
 
 ## Quick Start
 
@@ -34,23 +34,21 @@ Create a Python environment and install the package from PyPI:
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install eshkol-kernel==0.1.0a1
+python -m pip install eshkol-kernel==0.1.0a2
 ```
 
-If `eshkol-repl` is already on `PATH`, install the kernelspec:
+Set up the Eshkol runtime and Jupyter kernelspec:
 
 ```bash
-eshkol-kernel-install --user
-eshkol-kernel-doctor
+eshkol-kernel-setup --user
 ```
 
-If you do not have `eshkol-repl` installed, use the runtime fetch helper and
-bake the downloaded path into the kernelspec:
+By default this uses an existing `eshkol-repl` on `PATH`; if none is found, it
+downloads Eshkol into a user cache directory, installs the kernelspec, and runs
+the doctor checks. To force a specific runtime:
 
 ```bash
-eshkol-kernel-fetch-runtime --output .external/eshkol
-eshkol-kernel-install --user --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl"
-eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl"
+eshkol-kernel-setup --user --eshkol-repl /absolute/path/to/eshkol-repl
 ```
 
 Open JupyterLab:
@@ -85,9 +83,9 @@ The fetch helper supports release tags and flavors:
 eshkol-kernel-fetch-runtime --tag latest --flavor lite --output .external/eshkol
 ```
 
-Use `.external/` as local setup, not as source code. Installation docs use it
-because it gives new contributors a repeatable path, but production or packaged
-setups can point the kernelspec at any Eshkol installation.
+Use `.external/` as local development setup, not as source code. The setup
+command downloads into a user cache by default; production or packaged setups
+can point the kernelspec at any Eshkol installation.
 
 Linux release binaries may require system BLAS/LAPACK and LLVM runtime
 libraries. The CI workflow documents the Ubuntu packages currently needed for
@@ -208,7 +206,7 @@ Release publishing uses PyPI Trusted Publishing through GitHub Actions:
 - `Publish to PyPI` runs only for tags like `v0.1.0a1` or `v0.1.0`.
 - Both workflows build the package and run `twine check dist/*` before upload.
 
-Version `0.1.0a1` is published on
+Version `0.1.0a2` is published on
 [PyPI](https://pypi.org/project/eshkol-kernel/). See
 [docs/RELEASING.md](docs/RELEASING.md) for the release checklist.
 

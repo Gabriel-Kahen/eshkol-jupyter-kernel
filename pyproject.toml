@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eshkol-kernel"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "A Jupyter kernel for Eshkol backed by eshkol-repl."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -47,6 +47,7 @@ dev = [
 eshkol-kernel-install = "eshkol_kernel.install:main"
 eshkol-kernel-fetch-runtime = "eshkol_kernel.fetch_runtime:main"
 eshkol-kernel-doctor = "eshkol_kernel.doctor:main"
+eshkol-kernel-setup = "eshkol_kernel.setup:main"
 
 [project.urls]
 Homepage = "https://github.com/Gabriel-Kahen/eshkol-jupyter-kernel"

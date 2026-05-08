@@ -43,6 +43,7 @@ class DoctorOptions:
     skip_kernelspec: bool = False
     require_kernelspec: bool = False
     skip_smoke: bool = False
+    kernelspec_dir: str | None = None
 
 
 @dataclass(frozen=True)
@@ -116,7 +117,14 @@ def run_doctor(options: DoctorOptions) -> list[CheckResult]:
     if options.skip_kernelspec:
         results.append(CheckResult("Jupyter kernelspec", SKIP, "Skipped by --skip-kernelspec."))
     else:
-        results.append(check_kernelspec(options.kernel_name, required=options.require_kernelspec, expected_repl=repl))
+        results.append(
+            check_kernelspec(
+                options.kernel_name,
+                required=options.require_kernelspec,
+                expected_repl=repl,
+                kernel_dirs=[options.kernelspec_dir] if options.kernelspec_dir else None,
+            )
+        )
 
     if options.skip_smoke:
         results.append(CheckResult("execution smoke test", SKIP, "Skipped by --skip-smoke."))
@@ -249,8 +257,9 @@ def check_kernelspec(
     *,
     required: bool,
     expected_repl: ReplResolution | None = None,
+    kernel_dirs: list[str] | None = None,
 ) -> CheckResult:
-    manager = KernelSpecManager()
+    manager = KernelSpecManager(kernel_dirs=kernel_dirs) if kernel_dirs else KernelSpecManager()
     try:
         spec = manager.get_kernel_spec(kernel_name)
     except NoSuchKernel:

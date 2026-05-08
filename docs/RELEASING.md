@@ -45,8 +45,9 @@ Do not add long-lived PyPI API tokens to GitHub secrets.
    PY
    ```
 
-2. Decide the next version in `pyproject.toml`. Version `0.1.0a1` is already
-   published, leaving `0.1.0` available for a later stable first release.
+2. Decide the next version in `pyproject.toml`. Alpha versions `0.1.0a1` and
+   `0.1.0a2` are already published, leaving `0.1.0` available for a later
+   stable first release.
 
 3. Update `CHANGELOG.md` and change `Unreleased` to the release date.
 
@@ -61,6 +62,10 @@ Do not add long-lived PyPI API tokens to GitHub secrets.
    pytest
    eshkol-kernel-fetch-runtime --output .external/eshkol
    eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" --skip-kernelspec
+   eshkol-kernel-setup \
+     --prefix /tmp/eshkol-kernel-release-prefix \
+     --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" \
+     --skip-smoke
    ```
 
 5. Push to `main` and wait for CI to pass.
@@ -83,6 +88,10 @@ python -m pip install \
   --extra-index-url https://pypi.org/simple/ \
   eshkol-kernel==0.1.0a2
 eshkol-kernel-doctor --skip-smoke --skip-kernelspec
+eshkol-kernel-setup \
+  --prefix /tmp/eshkol-kernel-testpypi-prefix \
+  --runtime-dir /tmp/eshkol-kernel-testpypi-runtime \
+  --skip-smoke
 ```
 
 ## PyPI

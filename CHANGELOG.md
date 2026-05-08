@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented here.
 
-## Unreleased
+## 0.1.0a2 - 2026-05-08
 
+- Added `eshkol-kernel-setup` to find or download Eshkol, install the kernelspec, run diagnostics, and print next steps.
 - Fixed kernelspec installation to store absolute expanded `eshkol-repl` paths.
 - Fixed setup diagnostics for kernelspec/runtime mismatches and local runtime hints.
 - Hardened runtime downloads with network timeouts and safer tar extraction.
