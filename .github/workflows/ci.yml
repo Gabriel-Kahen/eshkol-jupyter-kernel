@@ -75,7 +75,7 @@ jobs:
           python -m pip install -e '.[test,dev]'
 
       - name: Download Eshkol runtime
-        run: eshkol-kernel-fetch-runtime --output .external/eshkol
+        run: eshkol-kernel-fetch-runtime --tag v1.3.6-evolve --output .external/eshkol
 
       - name: Run real runtime smoke tests
         run: ESHKOL_REAL_REPL="$PWD/.external/eshkol/bin/eshkol-repl" pytest -q tests/test_real_eshkol.py
