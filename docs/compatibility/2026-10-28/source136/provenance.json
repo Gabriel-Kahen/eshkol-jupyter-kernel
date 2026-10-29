@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "started_utc": "2026-10-29T01:47:02.976938+00:00",
+  "platform": "Linux-7.2.7-1-cachyos-x86_64-with-glibc2.44",
+  "machine": "x86_64",
+  "python": "3.14.7 (main, Aug 14 2026, 06:38:32) [GCC 16.2.1 20260810]",
+  "kernel_head": {
+    "argv": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "returncode": 0,
+    "stdout": "6ab3d1877410d14d8871fac6d53d4dcbeaf61392\n",
+    "stderr": ""
+  },
+  "kernel_status": {
+    "argv": [
+      "git",
+      "status",
+      "--short"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "runtime_ref": "341ac812ed600fd9d27c28e9509d66ab71363947",
+  "repl": "/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/.external/source-repl",
+  "repl_sha256": "146117c55f9939ce3ef4623fc27dca630dcfa57109645911a57b333bb491544a",
+  "transport": "machine",
+  "handshake": [
+    {
+      "type": "ready",
+      "protocol_version": 1,
+      "pid": 272645,
+      "eshkol_version": "1.3.6-evolve"
+    }
+  ],
+  "probe": {
+    "argv": [
+      "/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/.external/source-repl",
+      "--machine"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "[REPL] Discovered 789 functions, 962 globals, 23 variadic entries from stdlib.bc\n[REPL] Loaded stdlib from cached object: /home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/.external/eshkol-build/stdlib-jit-v4-42D1C84BA3E6D138-x86_64-pc-linux-gnu-abi1h8s0a8.o\nEREPL READY\nEREPL/1 {\"type\":\"ready\",\"protocol_version\":1,\"pid\":272645,\"eshkol_version\":\"1.3.6-evolve\"}\nEREPL/1 {\"type\":\"shutdown\",\"id\":\"probe\",\"ok\":true}\n"
+  },
+  "dependencies": {
+    "eshkol-kernel": "0.1.0a5",
+    "ipykernel": "7.4.0",
+    "jupyter-client": "8.10.0",
+    "nbclient": "0.11.0",
+    "pytest": "9.2.0"
+  },
+  "compiler_head": {
+    "argv": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "returncode": 0,
+    "stdout": "341ac812ed600fd9d27c28e9509d66ab71363947\n",
+    "stderr": ""
+  },
+  "compiler_status": {
+    "argv": [
+      "git",
+      "status",
+      "--short"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "test_command": [
+    "/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-ra",
+    "tests/test_runtime_compatibility.py",
+    "--junitxml=/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/.external/evidence-final-source136/junit.xml"
+  ],
+  "pytest_exit_code": 1,
+  "outcome": "failed",
+  "finished_utc": "2026-10-29T01:48:33.257102+00:00"
+}

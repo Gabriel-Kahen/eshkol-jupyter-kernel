@@ -1,0 +1,68 @@
+{
+  "source-repl": {
+    "ready": {
+      "type": "ready",
+      "protocol_version": 1,
+      "pid": 270048,
+      "eshkol_version": "1.3.6-evolve"
+    },
+    "define": {
+      "stdout": "",
+      "stderr": "",
+      "value": "0",
+      "value_type": "integer",
+      "error": null
+    },
+    "read": {
+      "stdout": "",
+      "stderr": "",
+      "value": "41",
+      "value_type": "integer",
+      "error": null
+    }
+  },
+  "source135-repl": {
+    "ready": {
+      "type": "ready",
+      "protocol_version": 1,
+      "pid": 270353,
+      "eshkol_version": "1.3.5-evolve"
+    },
+    "define": {
+      "stdout": "",
+      "stderr": "",
+      "value": "0",
+      "value_type": "integer",
+      "error": null
+    },
+    "read": {
+      "stdout": "",
+      "stderr": "",
+      "value": "41",
+      "value_type": "integer",
+      "error": null
+    }
+  },
+  "v1.3.6-evolve-repl": {
+    "ready": {
+      "type": "ready",
+      "protocol_version": 1,
+      "pid": 270563,
+      "eshkol_version": "1.3.6-evolve"
+    },
+    "define": {
+      "stdout": "",
+      "stderr": "",
+      "value": "0",
+      "value_type": "integer",
+      "error": null
+    },
+    "read": {
+      "stdout": "",
+      "stderr": "",
+      "value": "41",
+      "value_type": "integer",
+      "error": null
+    }
+  }
+}

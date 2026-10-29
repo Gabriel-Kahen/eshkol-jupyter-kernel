@@ -59,3 +59,10 @@ Kernel `1a172348bfdd13e34efe9388e115b8f8a4eb0307`, Linux x86_64, Python 3.14.7:
 
 These results do not establish machine migration compatibility. The migration
 must be incorporated at an exact commit and the full suite executed against it.
+
+## Independent migration validation
+
+See [the retained findings and evidence](compatibility/2026-10-28/FINDINGS.md) for
+validation of exact migration commit `3be79e3c44e3f2e7ae9c010183891711723a387a`,
+including the confirmed runtime contract failures. Current suite: 33 real-runtime
+cases plus helper/provenance unit coverage. Test failures remain visible.
