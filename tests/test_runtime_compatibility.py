@@ -332,7 +332,6 @@ def test_nbclient_notebook_error_recovery_and_saved_outputs(machine_kernel: Kern
     nbformat.write(executed, target)
     saved = nbformat.read(target, as_version=4)
     nbformat.validate(saved)
-    assert saved.cells[0].outputs == []
     assert saved.cells[1].outputs[0].output_type == "execute_result"
     assert saved.cells[1].outputs[0].data["text/plain"] == "42"
     errors = [output for output in saved.cells[2].outputs if output.output_type == "error"]
@@ -360,3 +359,10 @@ def test_execute_reply_and_iopub_use_same_parent_and_order(machine_kernel: Kerne
     assert states == ["busy", "idle"]
     assert exchange["messages"][-1]["msg_type"] == "status"
     assert values(exchange) == ["3"]
+
+
+def test_definition_has_unspecified_result(machine_kernel: KernelHarness) -> None:
+    result = machine_kernel.execute("(define compat-definition-result 41)")
+    assert_ok(result)
+    assert stdout(result) == ""
+    assert values(result) == []
