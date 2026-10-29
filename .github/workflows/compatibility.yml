@@ -56,11 +56,23 @@ jobs:
           test "$(git -C .external/source rev-parse HEAD)" = "$RUNTIME_COMMIT"
           cmake -S .external/source -B .external/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21 -DLLVM_DIR=/usr/lib/llvm-21/lib/cmake/llvm -DCMAKE_INSTALL_PREFIX="$PWD/.external/runtime" -DESHKOL_BUILD_TESTS=OFF -DESHKOL_BUILD_AGENT_FFI=OFF -DESHKOL_GPU_ENABLED=OFF -DESHKOL_BLAS_ENABLED=OFF
           cmake --build .external/build --target eshkol-repl stdlib -j2
-          echo "COMPAT_REPL=$PWD/.external/build/eshkol-repl" >> "$GITHUB_ENV"
+          cat > .external/source-repl <<EOF
+          #!/bin/sh
+          export ESHKOL_LIB_DIR="$PWD/.external/build"
+          export ESHKOL_PATH="$PWD/.external/source/lib"
+          exec "$PWD/.external/build/eshkol-repl" "\$@"
+          EOF
+          chmod +x .external/source-repl
+          echo "COMPAT_REPL=$PWD/.external/source-repl" >> "$GITHUB_ENV"
       - name: Run behavioral contract
         env:
           RUNTIME_REF: ${{ matrix.runtime.tag || matrix.runtime.commit }}
-        run: python scripts/run_compatibility.py --repl "$COMPAT_REPL" --runtime-ref "$RUNTIME_REF" --output .external/evidence
+        run: |
+          source_args=()
+          if [ -d .external/source ]; then
+            source_args=(--runtime-source .external/source)
+          fi
+          python scripts/run_compatibility.py --repl "$COMPAT_REPL" --runtime-ref "$RUNTIME_REF" "${source_args[@]}" --output .external/evidence
       - uses: actions/upload-artifact@v6
         if: always()
         with:
