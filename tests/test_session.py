@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from eshkol_kernel.session import EshkolReplSession, EshkolSessionError, classify_error, clean_repl_output
+from eshkol_kernel.session import EshkolSessionError, LegacyReplSession, classify_error, clean_repl_output
 
 FAKE_REPL = Path(__file__).with_name("fake_eshkol_repl.py")
 
 
-def make_session() -> EshkolReplSession:
-    return EshkolReplSession(
+def make_session() -> LegacyReplSession:
+    return LegacyReplSession(
         executable=sys.executable,
         argv=[str(FAKE_REPL)],
         load_stdlib=False,
@@ -20,8 +20,8 @@ def make_session() -> EshkolReplSession:
     )
 
 
-def make_short_timeout_session() -> EshkolReplSession:
-    return EshkolReplSession(
+def make_short_timeout_session() -> LegacyReplSession:
+    return LegacyReplSession(
         executable=sys.executable,
         argv=[str(FAKE_REPL)],
         load_stdlib=False,
@@ -280,7 +280,7 @@ def test_classify_error_variants() -> None:
 
 
 def test_missing_executable_error() -> None:
-    session = EshkolReplSession(executable="definitely-not-eshkol-repl", load_stdlib=False)
+    session = LegacyReplSession(executable="definitely-not-eshkol-repl", load_stdlib=False)
     with pytest.raises(EshkolSessionError):
         session.start()
 

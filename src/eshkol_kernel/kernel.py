@@ -85,8 +85,29 @@ class EshkolKernel(Kernel):
             "traceback": traceback,
         }
 
+    @property
+    def kernel_info(self) -> dict[str, Any]:
+        info = super().kernel_info
+        session = self.eshkol_session
+        if getattr(session, "supports_machine_protocol", False):
+            try:
+                ready = session.ready_info
+                info["language_info"] = {**info["language_info"], "version": ready["eshkol_version"]}
+                info["banner"] = f"Eshkol {ready['eshkol_version']} (EREPL v1)"
+            except EshkolSessionError as exc:
+                info["banner"] = f"Eshkol runtime unavailable: {exc}"
+        return info
+
     def do_complete(self, code: str, cursor_pos: int) -> dict[str, Any]:
-        return complete(code, cursor_pos, extra_symbols=self._user_symbols)
+        session = self.eshkol_session
+        if not getattr(session, "supports_machine_protocol", False):
+            return complete(code, cursor_pos, extra_symbols=self._user_symbols)
+        prefix, start, end = token_at_cursor(code, cursor_pos)
+        try:
+            matches = session.complete(prefix)
+        except EshkolSessionError as exc:
+            return {"status": "error", "ename": "EshkolSessionError", "evalue": str(exc), "traceback": []}
+        return {"matches": matches, "cursor_start": start, "cursor_end": end, "metadata": {}, "status": "ok"}
 
     def do_inspect(self, code: str, cursor_pos: int, detail_level: int = 0) -> dict[str, Any]:
         del detail_level
@@ -102,6 +123,13 @@ class EshkolKernel(Kernel):
         }
 
     def do_is_complete(self, code: str) -> dict[str, str]:
+        session = self.eshkol_session
+        if getattr(session, "supports_machine_protocol", False):
+            try:
+                status = session.is_complete(code)
+            except EshkolSessionError:
+                return {"status": "unknown"}
+            return {"status": status, **({"indent": "  "} if status == "incomplete" else {})}
         completeness = check_completeness(code)
         reply = {"status": completeness.status}
         if completeness.indent:
@@ -112,6 +140,7 @@ class EshkolKernel(Kernel):
         if self._eshkol_session is not None:
             self._eshkol_session.close()
             self._eshkol_session = None
+        self._user_symbols.clear()
         return {"restart": restart}
 
     def do_interrupt(self, interrupt: bool = True) -> dict[str, str]:
@@ -124,15 +153,25 @@ class EshkolKernel(Kernel):
             for event in result.output_events:
                 if event.kind == "display_data" and event.display_data is not None:
                     self._publish_display_data(event.display_data)
-                elif event.kind == "stdout" and event.text:
-                    self._publish_stream("stdout", event.text)
+                elif event.kind in {"stdout", "stderr"} and event.text:
+                    self._publish_stream(event.kind, event.text)
+                elif event.kind == "execute_result":
+                    self.send_response(
+                        self.iopub_socket,
+                        "execute_result",
+                        {
+                            "execution_count": self.execution_count,
+                            "data": {"text/plain": event.text},
+                            "metadata": {"eshkol": {"value_type": event.value_type}},
+                        },
+                    )
         elif result.stdout:
             self.send_response(
                 self.iopub_socket,
                 "stream",
                 {"name": "stdout", "text": result.stdout},
             )
-        if result.stderr:
+        if result.stderr and not any(event.kind == "stderr" for event in result.output_events):
             self.send_response(
                 self.iopub_socket,
                 "stream",

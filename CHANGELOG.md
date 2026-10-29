@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented here.
 
+## Unreleased
+
+- Default to EREPL v1 machine-mode requests with protocol negotiation, structured errors, and separately published return values.
+- Preserve explicit stdout and rich-display ordering, and drain both subprocess pipes without using raw stdout as an execution boundary.
+- Use runtime completion, completeness, and language-version metadata; retain local token positions and documentation lookup.
+- Keep older runtimes available through explicit `ESHKOL_KERNEL_PROTOCOL=legacy`; do not silently downgrade after a failed handshake.
+- Raise the startup default to 120 seconds and document per-form timeouts, full-process reset semantics, compatibility, and validation limits.
+
 ## 0.1.0a5 - 2026-05-08
 
 - Closed PTY resources more aggressively after timed-out REPL sessions so recovery starts from a clean child process.

@@ -15,7 +15,7 @@ from eshkol_kernel.doctor import (
     run_doctor,
 )
 
-FAKE_REPL = Path(__file__).with_name("fake_eshkol_repl.py")
+FAKE_REPL = Path(__file__).with_name("fake_machine_repl.py")
 
 
 class FakeKernelSpec:

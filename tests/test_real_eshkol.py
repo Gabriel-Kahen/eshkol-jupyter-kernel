@@ -28,7 +28,8 @@ def test_real_eshkol_session_smoke() -> None:
         session.close()
 
     assert result.ok
-    assert result.stdout == "6\n"
+    assert result.stdout == ""
+    assert result.value == "6"
 
 
 def test_real_eshkol_through_jupyter_client(tmp_path: Path) -> None:
@@ -40,8 +41,9 @@ def test_real_eshkol_through_jupyter_client(tmp_path: Path) -> None:
         eshkol_repl=str(repl),
         repl_args="",
         load_stdlib=False,
+        protocol="machine",
     ) as client:
         reply, outputs = execute_and_collect(client, "(+ 1 2 3)")
 
     assert reply["status"] == "ok"
-    assert outputs == [("stdout", "6\n")]
+    assert outputs == [("execute_result", {"text/plain": "6"})]

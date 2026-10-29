@@ -13,20 +13,23 @@ computational notes.
 
 - Stateful Eshkol execution through `eshkol-repl`
 - Multiline cells and multiple top-level forms per cell
-- Text output, classified errors, and ordered rich display output
-- Completion for common Scheme/Eshkol forms and symbols defined in earlier cells
+- Separate text output and return values, structured errors, and ordered rich display output
+- Runtime completion for builtins and session-defined symbols
 - Eshkol Pygments lexer for rendered notebooks, `.esk` files, and static exports
 - Rich display protocol for markdown, HTML, SVG, JSON, LaTeX, PNG, tables, and trees
 - One-command setup that can find or download an Eshkol runtime
 - Local diagnostics for runtime, kernelspec, shared libraries, and smoke execution
 
-The package is currently alpha but usable. Version `0.1.0a5` is published on
-[PyPI](https://pypi.org/project/eshkol-kernel/).
+The package is currently alpha. Version `0.1.0a5` is published on
+[PyPI](https://pypi.org/project/eshkol-kernel/) and uses the original PTY bridge.
+The development checkout described here defaults to the EREPL v1 machine
+protocol; it requires a runtime that announces protocol version 1. See
+[the protocol policy](docs/MACHINE_PROTOCOL.md) for compatibility and limits.
 
 ## Install
 
-Create a Python environment, install the package with JupyterLab, run setup, and
-start Jupyter:
+For the published PTY-based `0.1.0a5` release, create a Python environment,
+install the package with JupyterLab, run setup, and start Jupyter:
 
 ```bash
 python3 -m venv .venv
@@ -54,6 +57,18 @@ To force a specific runtime:
 eshkol-kernel-setup --user --eshkol-repl /absolute/path/to/eshkol-repl
 ```
 
+For the development machine-mode bridge, install this checkout using the
+[development instructions](#development), then select an EREPL v1 runtime:
+
+```bash
+eshkol-kernel-setup --user --eshkol-repl /absolute/path/to/erepl-v1/eshkol-repl
+python -m jupyter lab
+```
+
+An older runtime requires explicit legacy mode in the environment that starts
+Jupyter (`ESHKOL_KERNEL_PROTOCOL=legacy python -m jupyter lab`). There is no
+automatic protocol downgrade.
+
 ## Runtime Model
 
 This package does not vendor Eshkol itself. It is a Jupyter wrapper around an
@@ -73,10 +88,11 @@ eshkol-kernel-setup --no-download
 The kernel reads these environment variables when Jupyter starts it:
 
 - `ESHKOL_REPL`: path to `eshkol-repl` (default: `eshkol-repl`)
-- `ESHKOL_KERNEL_LOAD_STDLIB`: load stdlib on startup (`1` by default)
+- `ESHKOL_KERNEL_PROTOCOL`: `machine` (default, EREPL v1) or explicit `legacy` (PTY)
+- `ESHKOL_KERNEL_LOAD_STDLIB`: legacy-mode stdlib loading (`1` by default); machine mode always loads stdlib
 - `ESHKOL_KERNEL_REPL_ARGS`: extra arguments passed to `eshkol-repl`
-- `ESHKOL_KERNEL_TIMEOUT`: per-cell execution timeout in seconds (default: `30`)
-- `ESHKOL_KERNEL_START_TIMEOUT`: REPL startup timeout in seconds (default: `10`)
+- `ESHKOL_KERNEL_TIMEOUT`: execution timeout per top-level form in seconds (default: `30`)
+- `ESHKOL_KERNEL_START_TIMEOUT`: REPL startup/handshake timeout in seconds (default: `120`)
 
 If Jupyter launches from an environment that does not inherit your shell
 variables, bake the runtime path into the kernelspec:
@@ -110,7 +126,10 @@ eshkol-kernel-doctor
 ```
 
 It checks the package import, platform support, `eshkol-repl` resolution, shared
-library dependencies, the `Eshkol` kernelspec, and a real `(+ 1 2 3)` execution.
+library dependencies, the `Eshkol` kernelspec, and a real `(+ 1 2 3)` execution
+through the configured protocol (EREPL v1 by default). An installed runtime
+that lacks the machine handshake fails that check; the doctor does not silently
+select legacy mode.
 Point it at a specific runtime when needed:
 
 ```bash
@@ -167,7 +186,9 @@ dedicated browser-side Eshkol mode exists.
 
 ## Rich Display Output
 
-Normal Eshkol output goes to stdout. A single output line matching this JSON
+Explicit Eshkol output goes to stdout; machine-mode return values are separate
+Jupyter `execute_result` messages, one for each top-level form whose value is not
+unspecified. A single stdout line matching this JSON
 shape is published as a Jupyter `display_data` MIME bundle instead:
 
 ```json
@@ -201,15 +222,17 @@ remain plain stdout.
 
 ## How It Works
 
-The kernel subclasses `ipykernel.kernelbase.Kernel`, the standard wrapper-kernel
-path described by the Jupyter Client documentation. It starts `eshkol-repl` in a
-pseudo-terminal because the native REPL is interactive, stateful, and prints
-prompts only when attached to a terminal.
+The kernel subclasses `ipykernel.kernelbase.Kernel` and keeps one
+`eshkol-repl --machine` subprocess alive across cells. It negotiates EREPL v1,
+splits cells into top-level forms, and sends one JSON eval request at a time.
+Matching response frames separate explicit stdout, typed return values, and
+structured errors. The bridge drains both pipes continuously and uses the
+response's captured stdout to avoid racing or duplicating raw pipe output.
 
-Each notebook cell is split into top-level Eshkol forms and sent to the REPL.
-After each form, the kernel sends a private sentinel expression and reads until
-that sentinel appears. That gives the wrapper a reliable end-of-execution marker
-while keeping the same REPL state alive between cells.
+Runtime requests also provide completion and completeness; token positions,
+indentation suggestions, and documentation lookup remain local. A full reset
+restarts the process because protocol `reset` cannot unload JIT definitions.
+See [MACHINE_PROTOCOL.md](docs/MACHINE_PROTOCOL.md) for the contract and scope.
 
 ## Development
 
@@ -225,8 +248,11 @@ python -m build
 pytest
 ```
 
-The default tests use a fake REPL so they can run even when Eshkol itself is not
-installed. To run the real-runtime smoke tests locally:
+The default tests use fake runtimes so they can run without Eshkol installed.
+They check the client and Jupyter bridge, not native JIT or signal behavior.
+Broader real-runtime validation is a separate test effort. To run the existing
+real-runtime smoke tests locally, use a runtime that passes the EREPL v1
+handshake:
 
 ```bash
 eshkol-kernel-fetch-runtime --output .external/eshkol
@@ -234,8 +260,10 @@ ESHKOL_REAL_REPL="$PWD/.external/eshkol/bin/eshkol-repl" pytest tests/test_real_
 eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" --skip-kernelspec
 ```
 
-CI runs linting, package builds, fake-REPL tests, notebook execution tests, and
-a separate real Eshkol smoke test that downloads the release binary.
+The CI workflow includes linting, package builds, fake-runtime tests, notebook
+execution tests, and a separate real Eshkol smoke job. A configured/downloaded
+release must satisfy the selected protocol; a version label alone is not a
+substitute for the handshake.
 
 ## Release
 
@@ -244,9 +272,12 @@ Release publishing uses PyPI Trusted Publishing through GitHub Actions. See
 
 ## Known Limits
 
-- This package targets Unix-like systems where `pexpect` can allocate a
-  pseudo-terminal. macOS and Linux are the intended platforms.
+- Machine transport uses subprocess pipes. Windows native runtime and interrupt
+  behavior are not verified by this migration. Legacy mode requires a Unix PTY.
 - Rich display currently depends on the JSON line convention above.
 - Live editor highlighting still uses Scheme-like CodeMirror behavior.
-- Interrupt behavior depends on the native REPL's signal handling and the
-  frontend. Restarting the kernel is the reliable reset path.
+- Machine output arrives after each form finishes because the runtime captures
+  stdout. Cross-stream stdout/stderr ordering is not guaranteed.
+- Runtime completeness is a delimiter scan, not a full syntax check.
+- Interrupt behavior depends on the native runtime and frontend. Restarting the
+  kernel clears definitions; protocol `reset` alone does not.

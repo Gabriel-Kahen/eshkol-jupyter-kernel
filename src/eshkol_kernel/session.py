@@ -12,7 +12,9 @@ from shutil import which
 from typing import Any
 
 from .display import parse_display_payload
+from .errors import EshkolSessionError
 from .forms import FormError, FormSource, split_top_level_form_sources
+from .machine import MachineClient
 
 try:
     import pexpect
@@ -23,9 +25,7 @@ except ImportError:  # pragma: no cover - exercised on unsupported platforms.
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 PROMPT_RE = re.compile(r"(?m)^\s*(?:eshkol|\[\d+,\d+\])>\s*")
 TRAILING_PROMPT_RE = re.compile(r"(?:eshkol|\[\d+,\d+\])>\s*$")
-ERROR_RE = re.compile(
-    r"(?im)(^|\n)\s*(?:error|exception|syntax[- ]?error|runtime[- ]?error|type[- ]?error)\s*:.*"
-)
+ERROR_RE = re.compile(r"(?im)(^|\n)\s*(?:error|exception|syntax[- ]?error|runtime[- ]?error|type[- ]?error)\s*:.*")
 CLASSIFIED_ERROR_PATTERNS = [
     (re.compile(r"(?im)(^|\n)\s*syntax[- ]?error\s*:?\s*.*"), "EshkolSyntaxError"),
     (re.compile(r"(?im)(^|\n)\s*runtime[- ]?error\s*:?\s*.*"), "EshkolRuntimeError"),
@@ -34,10 +34,6 @@ CLASSIFIED_ERROR_PATTERNS = [
     (re.compile(r"(?im)(^|\n)\s*exception\s*:?\s*.*"), "EshkolException"),
     (ERROR_RE, "EshkolError"),
 ]
-
-
-class EshkolSessionError(RuntimeError):
-    """Raised when the Eshkol REPL session cannot be used."""
 
 
 @dataclass
@@ -60,6 +56,10 @@ class ExecutionResult:
     error_form: str | None = None
     error_line: int | None = None
     error_column: int | None = None
+    error_filename: str | None = None
+    error: dict[str, Any] | None = None
+    value: str | None = None
+    value_type: str | None = None
 
 
 @dataclass
@@ -67,10 +67,13 @@ class OutputEvent:
     kind: str
     text: str = ""
     display_data: DisplayData | None = None
+    value_type: str | None = None
 
 
-class EshkolReplSession:
-    """Stateful PTY-backed wrapper around `eshkol-repl`."""
+class SessionConfig:
+    """Shared executable and environment configuration."""
+
+    supports_machine_protocol = False
 
     PRIMARY_PROMPT_PATTERN = r"eshkol(?:\x1b\[[0-9;?]*[ -/]*[@-~])*>\s*"
 
@@ -81,7 +84,7 @@ class EshkolReplSession:
         *,
         load_stdlib: bool = True,
         timeout: float = 30.0,
-        start_timeout: float = 10.0,
+        start_timeout: float = 120.0,
         encoding: str = "utf-8",
     ) -> None:
         self.executable = executable
@@ -93,7 +96,7 @@ class EshkolReplSession:
         self._child = None
 
     @classmethod
-    def from_env(cls) -> EshkolReplSession:
+    def from_env(cls) -> SessionConfig:
         executable = os.environ.get("ESHKOL_REPL", "eshkol-repl")
         argv = shlex.split(os.environ.get("ESHKOL_KERNEL_REPL_ARGS", ""))
         load_stdlib = os.environ.get("ESHKOL_KERNEL_LOAD_STDLIB", "1").lower() not in {
@@ -103,14 +106,30 @@ class EshkolReplSession:
             "off",
         }
         timeout = float(os.environ.get("ESHKOL_KERNEL_TIMEOUT", "30"))
-        start_timeout = float(os.environ.get("ESHKOL_KERNEL_START_TIMEOUT", "10"))
-        return cls(
+        start_timeout = float(os.environ.get("ESHKOL_KERNEL_START_TIMEOUT", "120"))
+        return session_class()(
             executable=executable,
             argv=argv,
             load_stdlib=load_stdlib,
             timeout=timeout,
             start_timeout=start_timeout,
         )
+
+    def _resolve_executable(self) -> str:
+        if os.path.sep in self.executable:
+            if not os.path.exists(self.executable):
+                raise EshkolSessionError(f"Eshkol REPL not found: {self.executable}")
+            return self.executable
+        resolved = which(self.executable)
+        if not resolved:
+            raise EshkolSessionError(
+                f"Could not find {self.executable!r}. Install Eshkol or set ESHKOL_REPL=/path/to/eshkol-repl."
+            )
+        return resolved
+
+
+class LegacyReplSession(SessionConfig):
+    """Opt-in compatibility for older interactive runtimes (heuristic errors)."""
 
     @property
     def is_running(self) -> bool:
@@ -247,17 +266,191 @@ class EshkolReplSession:
             raise EshkolSessionError("Eshkol REPL session is not started.")
         return self._child
 
-    def _resolve_executable(self) -> str:
-        if os.path.sep in self.executable:
-            if not os.path.exists(self.executable):
-                raise EshkolSessionError(f"Eshkol REPL not found: {self.executable}")
-            return self.executable
-        resolved = which(self.executable)
-        if not resolved:
-            raise EshkolSessionError(
-                f"Could not find {self.executable!r}. Install Eshkol or set ESHKOL_REPL=/path/to/eshkol-repl."
+
+def session_class() -> type[SessionConfig]:
+    mode = os.environ.get("ESHKOL_KERNEL_PROTOCOL", "machine").lower()
+    if mode == "legacy":
+        return LegacyReplSession
+    if mode != "machine":
+        raise EshkolSessionError("ESHKOL_KERNEL_PROTOCOL must be 'machine' or 'legacy'.")
+    return EshkolReplSession
+
+
+ERROR_NAMES = {
+    "error": "EshkolError",
+    "type-error": "EshkolTypeError",
+    "file-error": "EshkolFileError",
+    "read-error": "EshkolReadError",
+    "syntax-error": "EshkolSyntaxError",
+    "parse-error": "EshkolSyntaxError",
+    "range-error": "EshkolRangeError",
+    "arity-error": "EshkolArityError",
+    "divide-by-zero": "EshkolZeroDivisionError",
+    "user-exception": "EshkolException",
+    "interrupted": "KeyboardInterrupt",
+    "crash": "EshkolCrash",
+    "internal-error": "EshkolInternalError",
+}
+
+
+class EshkolReplSession(SessionConfig):
+    """Stateful EREPL v1 session. Protocol version, rather than release label, gates support."""
+
+    supports_machine_protocol = True
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._client: MachineClient | None = None
+
+    @property
+    def is_running(self) -> bool:
+        return self._client is not None and self._client.is_running
+
+    @property
+    def ready_info(self) -> dict[str, Any]:
+        self.start()
+        assert self._client is not None
+        return self._client.ready_info.copy()
+
+    def start(self) -> None:
+        if self.is_running:
+            return
+        if self._client is not None:
+            self._client.close()
+        command = self._resolve_executable()
+        args = [arg for arg in self.argv if arg not in {"--machine", "-m"}]
+        self._client = MachineClient(
+            [command, *args, "--machine"], encoding=self.encoding, start_timeout=self.start_timeout
+        )
+
+    def _request(self, op: str, **fields: str) -> dict[str, Any]:
+        self.start()
+        assert self._client is not None
+        return self._client.request(op, timeout=self.timeout, **fields)
+
+    def _invalid_frame(self) -> None:
+        self.close()
+        raise EshkolSessionError("Invalid EREPL response fields; session closed to preserve synchronization.")
+
+    def complete(self, prefix: str) -> list[str]:
+        frame = self._request("complete", prefix=prefix)
+        matches = frame.get("matches")
+        if not isinstance(matches, list) or any(not isinstance(x, str) for x in matches):
+            self._invalid_frame()
+        return matches
+
+    def is_complete(self, code: str) -> str:
+        status = self._request("is_complete", code=code).get("status")
+        if not isinstance(status, str) or status not in {"complete", "incomplete", "invalid"}:
+            self._invalid_frame()
+        return status
+
+    def execute(self, code: str) -> ExecutionResult:
+        try:
+            forms = split_top_level_form_sources(code)
+        except FormError as exc:
+            return ExecutionResult(stderr=str(exc), ok=False, error_name=exc.__class__.__name__)
+        result = ExecutionResult()
+        for index, form in enumerate(forms, 1):
+            frame = self._request("eval", code=form.text)
+            if type(frame.get("ok")) is not bool or not isinstance(frame.get("stdout"), str):
+                self._invalid_frame()
+            text, displays, events = extract_machine_display_data(frame["stdout"])
+            result.stdout += text
+            result.display_data.extend(displays)
+            result.output_events.extend(events)
+            assert self._client is not None
+            diagnostics = self._client.diagnostics()
+            result.stderr += diagnostics
+            if diagnostics:
+                result.output_events.append(OutputEvent(kind="stderr", text=diagnostics))
+            if frame["ok"]:
+                if not isinstance(frame.get("value"), str) or not isinstance(frame.get("value_type"), str):
+                    self._invalid_frame()
+                result.value, result.value_type = frame["value"], frame["value_type"]
+                if result.value_type != "unspecified":
+                    result.output_events.append(
+                        OutputEvent(kind="execute_result", text=result.value, value_type=result.value_type)
+                    )
+                continue
+            error = frame.get("error")
+            if (
+                not isinstance(error, dict)
+                or not isinstance(error.get("kind"), str)
+                or not isinstance(error.get("message"), str)
+                or (error.get("printed") is not None and not isinstance(error["printed"], str))
+                or (error.get("filename") is not None and not isinstance(error["filename"], str))
+            ):
+                self._invalid_frame()
+            result.ok = False
+            result.error = error.copy()
+            result.value = result.value_type = None
+            result.error_name = ERROR_NAMES.get(error["kind"], "EshkolError")
+            result.error_form_index, result.error_form_count = index, len(forms)
+            result.error_form = form.text
+            result.error_line, result.error_column = line_column(code, form.start)
+            result.error_filename = error.get("filename")
+            # Native locations are relative to this form unless they name an external source.
+            native_line, native_column = error.get("line"), error.get("column")
+            if type(native_line) is int and native_line > 0:
+                result.error_line = native_line + (0 if result.error_filename else result.error_line - 1)
+                form_column = result.error_column
+                result.error_column = None
+                if type(native_column) is int and native_column > 0:
+                    result.error_column = native_column + (
+                        form_column - 1 if not result.error_filename and native_line == 1 else 0
+                    )
+            error_text = error.get("printed") or error["message"]
+            if type(native_line) is int and native_line > 0:
+                location = f"{result.error_filename or '<cell>'}:{result.error_line}"
+                if result.error_column is not None:
+                    location += f":{result.error_column}"
+                error_text = f"Runtime location: {location}\n{error_text}"
+            context = format_error_context(
+                error_text=error_text,
+                error_name=result.error_name,
+                form=form,
+                form_index=index,
+                form_count=len(forms),
+                code=code,
             )
-        return resolved
+            result.stderr += context
+            result.output_events.append(OutputEvent(kind="stderr", text=context))
+            break
+        return result
+
+    def interrupt(self) -> None:
+        if self._client is not None:
+            self._client.interrupt()
+
+    def reset(self) -> None:
+        # Protocol reset only clears bookkeeping; restarting is the honest full reset.
+        self.close()
+        self.start()
+
+    def close(self) -> None:
+        if self._client is not None:
+            self._client.close(graceful=True)
+            self._client = None
+
+
+def extract_machine_display_data(output: str) -> tuple[str, list[DisplayData], list[OutputEvent]]:
+    """Recognize rich JSON lines while preserving every other stdout character."""
+    text: list[str] = []
+    displays: list[DisplayData] = []
+    events: list[OutputEvent] = []
+    for line in output.splitlines(keepends=True):
+        display = parse_display_data(line)
+        if display is None:
+            text.append(line)
+            if events and events[-1].kind == "stdout":
+                events[-1].text += line
+            else:
+                events.append(OutputEvent(kind="stdout", text=line))
+        else:
+            displays.append(display)
+            events.append(OutputEvent(kind="display_data", display_data=display))
+    return "".join(text), displays, events
 
 
 def clean_repl_output(raw: str) -> str:

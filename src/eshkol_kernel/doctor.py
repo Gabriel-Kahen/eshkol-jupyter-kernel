@@ -16,7 +16,7 @@ from typing import Any
 from jupyter_client.kernelspec import KernelSpecManager, NoSuchKernel
 
 from . import __version__
-from .session import EshkolReplSession, EshkolSessionError
+from .session import EshkolSessionError, session_class
 
 PASS = "pass"
 WARN = "warn"
@@ -39,7 +39,7 @@ class DoctorOptions:
     kernel_name: str = "eshkol"
     load_stdlib: bool = False
     timeout: float = 10.0
-    start_timeout: float = 10.0
+    start_timeout: float = 120.0
     skip_kernelspec: bool = False
     require_kernelspec: bool = False
     skip_smoke: bool = False
@@ -66,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--kernel-name", default="eshkol", help="Jupyter kernelspec name to inspect.")
     parser.add_argument("--timeout", type=float, default=10.0, help="Per-cell smoke-test timeout in seconds.")
-    parser.add_argument("--start-timeout", type=float, default=10.0, help="REPL startup timeout in seconds.")
+    parser.add_argument("--start-timeout", type=float, default=120.0, help="REPL startup timeout in seconds.")
     parser.add_argument("--load-stdlib", action="store_true", help="Load Eshkol stdlib during the smoke test.")
     parser.add_argument("--skip-kernelspec", action="store_true", help="Skip kernelspec inspection.")
     parser.add_argument("--require-kernelspec", action="store_true", help="Fail if the kernelspec is not installed.")
@@ -150,6 +150,12 @@ def run_doctor(options: DoctorOptions) -> list[CheckResult]:
 
 
 def check_platform() -> CheckResult:
+    try:
+        selected = session_class()
+    except EshkolSessionError as exc:
+        return CheckResult("platform", FAIL, str(exc))
+    if selected.supports_machine_protocol:
+        return CheckResult("platform", PASS, f"{sys.platform} using EREPL v1 subprocess pipes.")
     if sys.platform.startswith("win"):
         return CheckResult(
             "platform",
@@ -337,7 +343,7 @@ def resolve_repl_value(requested: str, source: str) -> ReplResolution:
 
 
 def check_smoke(executable: Path, options: DoctorOptions) -> CheckResult:
-    session = EshkolReplSession(
+    session = session_class()(
         executable=str(executable),
         argv=list(options.repl_args),
         load_stdlib=options.load_stdlib,
@@ -358,12 +364,13 @@ def check_smoke(executable: Path, options: DoctorOptions) -> CheckResult:
 
     if not result.ok:
         return CheckResult("execution smoke test", FAIL, "Eshkol returned an error.", result.stderr.strip())
-    if result.stdout.strip() != "6":
+    output = result.value if session.supports_machine_protocol else result.stdout.strip()
+    if output != "6":
         return CheckResult(
             "execution smoke test",
             FAIL,
             "Unexpected smoke-test output.",
-            f"Expected 6, got {result.stdout.strip()!r}.",
+            f"Expected 6, got {output!r}.",
         )
     return CheckResult("execution smoke test", PASS, "Eshkol executed `(+ 1 2 3)` and returned 6.")
 
