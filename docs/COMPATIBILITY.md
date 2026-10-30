@@ -44,7 +44,7 @@ semantics. The runner defaults to machine transport and requires EREPL v1.
 `.github/workflows/compatibility.yml`:
 
 - Official v1.3.6 Linux x64 lite binary.
-- Current source `402126e596a6fe16044f9e181c4a7b36566f54ef`.
+- Current source `4c2ac2b10996bb6a06c93efb1d55f880da4b4e68` (re-pinned after the final upstream freshness check).
 - v1.3.5 source `74dc40d68a2cdb39c3392067ac766ccd87d5ad79`, built with
   a generic x86-64 standard library. This is a source-build compatibility gate.
 

@@ -1,6 +1,16 @@
 # Merge-readiness validation
 
 This supersedes the earlier blocked [maintenance checkpoint](MAINTENANCE.md).
+
+The final freshness guard subsequently caught upstream advancing to
+`4c2ac2b10996bb6a06c93efb1d55f880da4b4e68` and prevented merging the old pin.
+The compiler source diff is documentation/site content plus comments in
+`lib/core/ad/rigorous_interval.esk`; removing full-line comments leaves that file
+byte-identical. The supported matrix was re-pinned to `4c2ac2b1` and the runtime
+rebuilt. Final fresh local and remote results are recorded in the PR body and
+its linked CI provenance artifacts; a merge still requires all final-head gates
+and an unchanged upstream pin. The local tables below retain their exact earlier
+`402126e5` provenance rather than relabeling those historical runs.
 The original 33 behavior assertions are unchanged. Their three failures are now
 fixed at the kernel boundary, with explicit corrections rather than xfail,
 relaxed expected values, or a compiler patch.
