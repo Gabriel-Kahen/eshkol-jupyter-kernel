@@ -100,11 +100,18 @@ must be incorporated at an exact commit and the full suite executed against it.
 
 See [the retained findings and evidence](compatibility/2026-10-28/FINDINGS.md) for
 validation of exact migration commit `3be79e3c44e3f2e7ae9c010183891711723a387a`,
-including the confirmed runtime contract failures. Current suite: 33 real-runtime
-cases plus helper/provenance unit coverage. Test failures remain visible.
+including the historical runtime contract failures. The original 33 assertions
+remain unchanged; the kernel corrections and three added native control batches
+are covered by the later merge-readiness evidence.
 
 ## October 30 CI fixes and recheck
 
 [Updated evidence](compatibility/2026-10-30/FINDINGS.md) records the fixed macOS
 cleanup and fake-runtime doctor failures, passing Ubuntu/macOS CI, and the same
 three still-failing contract assertions against current Eshkol `402126e5`.
+
+## Merge-readiness corrections
+
+[Reviewed implementation and passing local native results](compatibility/2026-10-30/MERGE_READINESS.md)
+supersede the earlier blocked checkpoint. Raw upstream failures and the excluded
+v1.3.5 binary's negative evidence remain preserved separately.

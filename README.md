@@ -25,6 +25,10 @@ The package is currently alpha. Version `0.1.0a5` is published on
 The development checkout described here defaults to the EREPL v1 machine
 protocol; it requires a runtime that announces protocol version 1. See
 [the protocol policy](docs/MACHINE_PROTOCOL.md) for compatibility and limits.
+The tested artifact matrix covers the v1.3.6 Linux x64 lite binary and pinned
+current/v1.3.5 source builds. The distributed v1.3.5 binary can SIGILL on affected
+CPUs and is excluded from that supported matrix; see the
+[artifact policy and native results](docs/COMPATIBILITY.md).
 
 ## Install
 
@@ -250,9 +254,9 @@ pytest
 
 The default tests use fake runtimes so they can run without Eshkol installed.
 They check the client and Jupyter bridge, not native JIT or signal behavior.
-Broader real-runtime validation is a separate test effort. To run the existing
-real-runtime smoke tests locally, use a runtime that passes the EREPL v1
-handshake:
+The pinned native CI matrix also runs all 33 compatibility cases and three
+additional reader/result control batches. For a quick smoke, use an EREPL v1
+runtime:
 
 ```bash
 eshkol-kernel-fetch-runtime --output .external/eshkol
@@ -263,7 +267,8 @@ eshkol-kernel-doctor --eshkol-repl "$PWD/.external/eshkol/bin/eshkol-repl" --ski
 The CI workflow includes linting, package builds, fake-runtime tests, notebook
 execution tests, and a separate real Eshkol smoke job. A configured/downloaded
 release must satisfy the selected protocol; a version label alone is not a
-substitute for the handshake.
+substitute for the handshake. See [the reproducible native suite](docs/COMPATIBILITY.md)
+for the full matrix runner, provenance and known artifact exclusions.
 
 ## Release
 
