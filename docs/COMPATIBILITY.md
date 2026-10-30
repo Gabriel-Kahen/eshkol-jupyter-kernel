@@ -66,3 +66,9 @@ See [the retained findings and evidence](compatibility/2026-10-28/FINDINGS.md) f
 validation of exact migration commit `3be79e3c44e3f2e7ae9c010183891711723a387a`,
 including the confirmed runtime contract failures. Current suite: 33 real-runtime
 cases plus helper/provenance unit coverage. Test failures remain visible.
+
+## October 30 CI fixes and recheck
+
+[Updated evidence](compatibility/2026-10-30/FINDINGS.md) records the fixed macOS
+cleanup and fake-runtime doctor failures, passing Ubuntu/macOS CI, and the same
+three still-failing contract assertions against current Eshkol `402126e5`.

@@ -4,6 +4,9 @@ All notable changes to this project will be documented here.
 
 ## Unreleased
 
+- Preserve original protocol failures when macOS reports an exited process group as permission-denied; keep bounded owned-child and descendant cleanup.
+- Run CI doctor checks against the machine-protocol fake runtime and recheck compatibility against Eshkol source `402126e5`.
+
 - Default to EREPL v1 machine-mode requests with protocol negotiation, structured errors, and separately published return values.
 - Preserve explicit stdout and rich-display ordering, and drain both subprocess pipes without using raw stdout as an execution boundary.
 - Use runtime completion, completeness, and language-version metadata; retain local token positions and documentation lookup.

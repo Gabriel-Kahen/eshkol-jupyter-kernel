@@ -1,0 +1,81 @@
+{
+  "recorded_utc": "2026-10-30T15:16:54.537543+00:00",
+  "compiler_commit": "402126e596a6fe16044f9e181c4a7b36566f54ef",
+  "compiler_status": "",
+  "kernel_checkout_commit": "51cc1eb2958b8c2cd66666a5dbd66eaaccf0ea40",
+  "runtime_wrapper": "/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.external/source-repl",
+  "runtime_binary": "/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.external/eshkol-build/eshkol-repl",
+  "runtime_binary_sha256": "5afee975320f41aa3ba2ea25b332708359fefb2de00afa7f8b033c86a07b851e",
+  "platform": "Linux-7.2.7-1-cachyos-x86_64-with-glibc2.44",
+  "python": "3.14.7",
+  "llvm_version": "22.1.8",
+  "ready": {
+    "type": "ready",
+    "protocol_version": 1,
+    "pid": 951576,
+    "eshkol_version": "1.3.6-evolve"
+  },
+  "startup_seconds": 10.532683491999705,
+  "probes": {
+    "unterminated_string": {
+      "code": "\"unterminated",
+      "operation": "is_complete",
+      "expected": "incomplete",
+      "actual": "complete",
+      "passed": false
+    },
+    "bare_quote": {
+      "code": "'",
+      "operation": "is_complete",
+      "expected": "incomplete",
+      "actual": "complete",
+      "passed": false
+    },
+    "definition_result": {
+      "code": "(define compat-definition-result 41)",
+      "operation": "eval",
+      "expected": {
+        "error": null,
+        "stdout": "",
+        "value": "",
+        "value_type": "unspecified"
+      },
+      "actual": {
+        "stdout": "",
+        "stderr": "",
+        "value": "0",
+        "value_type": "integer",
+        "error": null
+      },
+      "passed": false
+    }
+  },
+  "completeness_controls": {
+    "\"unterminated": "complete",
+    "'": "complete",
+    "(define unfinished": "incomplete",
+    ")": "invalid",
+    "(+ 1 2)": "complete"
+  },
+  "state_after_definition": {
+    "stdout": "",
+    "stderr": "",
+    "value": "42",
+    "value_type": "integer",
+    "error": null
+  },
+  "import_scheme_base": {
+    "stdout": "",
+    "stderr": "",
+    "value": "()",
+    "value_type": "null",
+    "error": null
+  },
+  "stdlib_map": {
+    "stdout": "",
+    "stderr": "",
+    "value": "(2 3 4)",
+    "value_type": "pair",
+    "error": null
+  }
+}
