@@ -1,0 +1,91 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.6, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current
+configfile: pyproject.toml
+plugins: platformdirs-4.14.0
+collected 33 items
+
+tests/test_runtime_compatibility.py ...................FF...........F    [100%]
+
+=================================== FAILURES ===================================
+_____________ test_runtime_completeness["unterminated-incomplete] ______________
+
+machine_kernel = <compatibility_helpers.KernelHarness object at 0x7f9aaa27c2d0>
+code = '"unterminated', status = 'incomplete'
+
+    @pytest.mark.parametrize(("code", "status"), [
+        ("(+ 1\n 2)", "complete"),
+        ('(display "parenthesis ) in string") ; ( in comment', "complete"),
+        ("(define unfinished", "incomplete"),
+        ('"unterminated', "incomplete"),
+        ("'", "incomplete"),
+        (")", "invalid"),
+    ])
+    def test_runtime_completeness(machine_kernel: KernelHarness, code: str, status: str) -> None:
+        reply = machine_kernel.request("is_complete", code)["content"]
+>       assert reply["status"] == status, reply
+E       AssertionError: {'status': 'complete'}
+E       assert 'complete' == 'incomplete'
+E         
+E         - incomplete
+E         ? --
+E         + complete
+
+/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/tests/test_runtime_compatibility.py:215: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+------------------------------ Captured log setup ------------------------------
+WARNING  traitlets:kernelspec.py:406 Installing to /tmp/pytest-of-gabe/pytest-3/test_runtime_completeness__unt0/share/jupyter/kernels, which is not in ['/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.venv/share/jupyter/kernels', '/home/gabe/.local/share/jupyter/kernels', '/usr/local/share/jupyter/kernels', '/usr/share/jupyter/kernels', '/home/gabe/.ipython/kernels']. The kernelspec may not be found.
+___________________ test_runtime_completeness['-incomplete] ____________________
+
+machine_kernel = <compatibility_helpers.KernelHarness object at 0x7f9aacbbdc70>
+code = "'", status = 'incomplete'
+
+    @pytest.mark.parametrize(("code", "status"), [
+        ("(+ 1\n 2)", "complete"),
+        ('(display "parenthesis ) in string") ; ( in comment', "complete"),
+        ("(define unfinished", "incomplete"),
+        ('"unterminated', "incomplete"),
+        ("'", "incomplete"),
+        (")", "invalid"),
+    ])
+    def test_runtime_completeness(machine_kernel: KernelHarness, code: str, status: str) -> None:
+        reply = machine_kernel.request("is_complete", code)["content"]
+>       assert reply["status"] == status, reply
+E       AssertionError: {'status': 'complete'}
+E       assert 'complete' == 'incomplete'
+E         
+E         - incomplete
+E         ? --
+E         + complete
+
+/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/tests/test_runtime_compatibility.py:215: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+------------------------------ Captured log setup ------------------------------
+WARNING  traitlets:kernelspec.py:406 Installing to /tmp/pytest-of-gabe/pytest-3/test_runtime_completeness___in0/share/jupyter/kernels, which is not in ['/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.venv/share/jupyter/kernels', '/home/gabe/.local/share/jupyter/kernels', '/usr/local/share/jupyter/kernels', '/usr/share/jupyter/kernels', '/home/gabe/.ipython/kernels']. The kernelspec may not be found.
+____________________ test_definition_has_unspecified_result ____________________
+
+machine_kernel = <compatibility_helpers.KernelHarness object at 0x7f9aaa2b50f0>
+
+    def test_definition_has_unspecified_result(machine_kernel: KernelHarness) -> None:
+        result = machine_kernel.execute("(define compat-definition-result 41)")
+        assert_ok(result)
+        assert stdout(result) == ""
+>       assert values(result) == []
+E       AssertionError: assert ['0'] == []
+E         
+E         Left contains one more item: '0'
+E         Use -v to get more diff
+
+/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/tests/test_runtime_compatibility.py:368: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+------------------------------ Captured log setup ------------------------------
+WARNING  traitlets:kernelspec.py:406 Installing to /tmp/pytest-of-gabe/pytest-3/test_definition_has_unspecifie0/share/jupyter/kernels, which is not in ['/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.venv/share/jupyter/kernels', '/home/gabe/.local/share/jupyter/kernels', '/usr/local/share/jupyter/kernels', '/usr/share/jupyter/kernels', '/home/gabe/.ipython/kernels']. The kernelspec may not be found.
+- generated xml file: /home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.external/current-runtime-compatibility/junit.xml -
+=========================== short test summary info ============================
+FAILED tests/test_runtime_compatibility.py::test_runtime_completeness["unterminated-incomplete]
+FAILED tests/test_runtime_compatibility.py::test_runtime_completeness['-incomplete]
+FAILED tests/test_runtime_compatibility.py::test_definition_has_unspecified_result
+=================== 3 failed, 30 passed in 60.89s (0:01:00) ====================

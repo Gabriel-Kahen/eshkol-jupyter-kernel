@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented here.
 
+## Unreleased
+
+- Correct EREPL v1 reader completeness and definition placeholders without losing meaningful zero values or stdout.
+- Preserve lexical cell boundaries for character literals, escaped identifiers, interpolation and adjacent datums.
+- Validate v1.3.5 using an exact generic-CPU source build; retain the distributed binary's SIGILL exclusion and evidence.
+
+- Preserve original protocol failures when macOS reports an exited process group as permission-denied; keep bounded owned-child and descendant cleanup.
+- Run CI doctor checks against the machine-protocol fake runtime and recheck compatibility against Eshkol source `402126e5`.
+
+- Default to EREPL v1 machine-mode requests with protocol negotiation, structured errors, and separately published return values.
+- Preserve explicit stdout and rich-display ordering, and drain both subprocess pipes without using raw stdout as an execution boundary.
+- Use runtime completion, completeness, and language-version metadata; retain local token positions and documentation lookup.
+- Keep older runtimes available through explicit `ESHKOL_KERNEL_PROTOCOL=legacy`; do not silently downgrade after a failed handshake.
+- Raise the startup default to 120 seconds and document per-form timeouts, full-process reset semantics, compatibility, and validation limits.
+
 ## 0.1.0a5 - 2026-05-08
 
 - Closed PTY resources more aggressively after timed-out REPL sessions so recovery starts from a clean child process.

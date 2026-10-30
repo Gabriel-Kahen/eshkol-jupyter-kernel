@@ -26,7 +26,7 @@ class SetupOptions:
     fetch_timeout: float = DEFAULT_TIMEOUT
     load_stdlib: bool = True
     doctor_timeout: float = 10.0
-    start_timeout: float = 10.0
+    start_timeout: float = 120.0
     skip_smoke: bool = False
 
 
@@ -66,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
     stdlib.add_argument("--load-stdlib", action="store_true", default=True, help="Load Eshkol stdlib on startup.")
     stdlib.add_argument("--no-load-stdlib", action="store_true", help="Do not load Eshkol stdlib on startup.")
     parser.add_argument("--doctor-timeout", type=float, default=10.0, help="Doctor execution timeout in seconds.")
-    parser.add_argument("--start-timeout", type=float, default=10.0, help="REPL startup timeout in seconds.")
+    parser.add_argument("--start-timeout", type=float, default=120.0, help="REPL startup timeout in seconds.")
     parser.add_argument("--skip-smoke", action="store_true", help="Skip the doctor execution smoke test.")
     return parser
 

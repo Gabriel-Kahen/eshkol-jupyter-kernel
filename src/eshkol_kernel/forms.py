@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass
 
 
@@ -8,11 +9,15 @@ class FormError(ValueError):
 
 
 class IncompleteInput(FormError):
-    """Raised when a cell has unmatched opening delimiters."""
+    """Raised when a cell ends before its current datum is finished."""
+
+    def __init__(self, message: str, *, reason: str = "list") -> None:
+        super().__init__(message)
+        self.reason = reason
 
 
 class UnmatchedDelimiter(FormError):
-    """Raised when a cell has an unmatched closing delimiter."""
+    """Raised when a cell has an unmatched or mismatched closing delimiter."""
 
 
 @dataclass(frozen=True)
@@ -28,126 +33,135 @@ class FormSource:
     end: int
 
 
+class _Reader:
+    """Find datum boundaries without interpreting or evaluating Eshkol syntax.
+
+    Only semicolon line comments are trivia: native Eshkol currently rejects
+    Scheme block/datum comments, so consuming those here would discard source.
+    Compound/prefix nesting is bounded at 256 to avoid Python recursion failure.
+    """
+
+    def __init__(self, code: str) -> None:
+        self.code = code
+        self.has_character = False
+        self.has_escaped_identifier = False
+        self.has_interpolation = False
+
+    def trivia(self, index: int) -> int:
+        while index < len(self.code):
+            if self.code[index].isspace():
+                index += 1
+            elif self.code[index] == ";":
+                newline = self.code.find("\n", index)
+                index = len(self.code) if newline < 0 else newline + 1
+            else:
+                break
+        return index
+
+    def datum(self, index: int, depth: int = 0) -> int:
+        if depth > 256:
+            raise FormError("Input nesting exceeds the lexical reader limit.")
+        index = self.trivia(index)
+        if index == len(self.code):
+            raise IncompleteInput("Missing datum after prefix.", reason="prefix")
+        char = self.code[index]
+        if char in ")]":
+            raise UnmatchedDelimiter("Unmatched closing delimiter.")
+        if char in "'`,":
+            following = index + (2 if self.code.startswith(",@", index) else 1)
+            return self.datum(following, depth + 1)
+        if char in '\"|':
+            self.has_escaped_identifier |= char == "|"
+            cursor = index + 1
+            while cursor < len(self.code):
+                if self.code[cursor] == char:
+                    return cursor + 1
+                if char == '"' and self.code.startswith("~~{", cursor):
+                    cursor += 3
+                    continue
+                if char == '"' and self.code.startswith("~{", cursor):
+                    self.has_interpolation = True
+                    cursor = self.interpolation_end(cursor + 2)
+                    continue
+                cursor += 2 if self.code[cursor] == "\\" else 1
+            reason = "string" if char == '"' else "escaped-identifier"
+            raise IncompleteInput(f"Unterminated {reason} literal.", reason=reason)
+        if self.code.startswith("#\\", index):
+            self.has_character = True
+            cursor = index + 2
+            if cursor == len(self.code):
+                raise IncompleteInput("Incomplete character literal.", reason="character")
+            # A delimiter is itself the character, never a structural token.
+            if self.code[cursor].isspace() or self.code[cursor] in "()[];\"'`,|":
+                return cursor + 1
+            return self.atom_end(cursor)
+        opening = index + 1 if self.code.startswith("#(", index) else index
+        if self.code[opening] in "([":
+            closing = ")" if self.code[opening] == "(" else "]"
+            cursor = opening + 1
+            while True:
+                cursor = self.trivia(cursor)
+                if cursor == len(self.code):
+                    raise IncompleteInput("Input has unmatched opening delimiters.")
+                if self.code[cursor] == closing:
+                    return cursor + 1
+                if self.code[cursor] in ")]":
+                    raise UnmatchedDelimiter("Mismatched closing delimiter.")
+                cursor = self.datum(cursor, depth + 1)
+        if self.code.startswith("#;", index):
+            # Preserve this unsupported native token instead of treating it as
+            # a Scheme datum comment and silently dropping the following form.
+            return index + 2
+        return self.atom_end(index)
+
+    def interpolation_end(self, cursor: int) -> int:
+        """Mirror native readString's boundary scan and expression unescaping.
+
+        Parentheses remain expression source, not outer-string structure. The
+        native expression parser validates them after the interpolation closes.
+        """
+        in_string = escaped = False
+        while cursor < len(self.code):
+            char = self.code[cursor]
+            if not in_string and char == "}":
+                return cursor + 1
+            cursor += 1
+            if char == "\\" and cursor < len(self.code):
+                char = {"n": "\n", "t": "\t", "r": "\r"}.get(self.code[cursor], self.code[cursor])
+                cursor += 1
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+            elif char == '"':
+                in_string = True
+        raise IncompleteInput("Unterminated string interpolation.", reason="interpolation")
+
+    def atom_end(self, index: int) -> int:
+        while index < len(self.code) and not self.code[index].isspace() and self.code[index] not in "()[];\"'`,":
+            index += 1
+        return index
+
+    def forms(self) -> list[FormSource]:
+        result: list[FormSource] = []
+        index = self.trivia(0)
+        while index < len(self.code):
+            end = self.datum(index)
+            result.append(FormSource(self.code[index:end], index, end))
+            index = self.trivia(end)
+        return result
+
+
 def split_top_level_forms(code: str) -> list[str]:
     return [form.text for form in split_top_level_form_sources(code)]
 
 
 def split_top_level_form_sources(code: str) -> list[FormSource]:
-    """Split a notebook cell into top-level Eshkol forms.
-
-    The native REPL parses one form per evaluation. Notebook users naturally
-    put several definitions and one final expression in a single cell, so the
-    wrapper sends them one at a time while preserving REPL state.
-    """
-
-    forms: list[FormSource] = []
-    start: int | None = None
-    depth = 0
-    in_string = False
-    in_comment = False
-    escaped = False
-    atom_mode = False
-    awaiting_datum = False
-
-    for index, char in enumerate(code):
-        if start is None and in_comment:
-            if char == "\n":
-                in_comment = False
-            continue
-
-        if start is None:
-            if char.isspace():
-                continue
-            if char == ";":
-                in_comment = True
-                continue
-            if char in ")]":
-                raise UnmatchedDelimiter("Unmatched closing delimiter.")
-            start = index
-            if char in "'`,":
-                awaiting_datum = True
-                atom_mode = False
-                continue
-            if char == "#" and index + 1 < len(code) and code[index + 1] == "(":
-                atom_mode = False
-                continue
-            atom_mode = char not in "(["
-
-        if in_comment:
-            if char == "\n":
-                in_comment = False
-                if atom_mode and start is not None:
-                    _append_form(forms, code[start:index], start)
-                    start = None
-                    atom_mode = False
-            continue
-
-        if awaiting_datum:
-            if char.isspace():
-                continue
-            if char == "@" and start is not None and code[start:index] == ",":
-                continue
-            if char == ";":
-                in_comment = True
-                continue
-            if char in ")]":
-                raise UnmatchedDelimiter("Unmatched closing delimiter.")
-            awaiting_datum = False
-            atom_mode = char not in "(["
-
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-            continue
-
-        if char == ";":
-            if atom_mode and start is not None:
-                _append_form(forms, code[start:index], start)
-                start = None
-                atom_mode = False
-            in_comment = True
-            continue
-
-        if char == '"':
-            in_string = True
-            continue
-
-        if atom_mode:
-            if char.isspace():
-                _append_form(forms, code[start:index], start)
-                start = None
-                atom_mode = False
-            continue
-
-        if char in "([":
-            depth += 1
-            continue
-
-        if char in ")]":
-            depth -= 1
-            if depth < 0:
-                raise UnmatchedDelimiter("Unmatched closing delimiter.")
-            if depth == 0 and start is not None:
-                _append_form(forms, code[start : index + 1], start)
-                start = None
-            continue
-
-    if in_string:
-        raise IncompleteInput("Unterminated string literal.")
-    if awaiting_datum:
-        raise IncompleteInput("Missing datum after prefix.")
-    if depth > 0:
-        raise IncompleteInput("Input has unmatched opening delimiters.")
-    if depth < 0:
-        raise UnmatchedDelimiter("Unmatched closing delimiter.")
-    if start is not None:
-        _append_form(forms, code[start:], start)
-
-    return forms
+    """Split cells into source-preserving datums for one-form native requests."""
+    return _Reader(code).forms()
 
 
 def check_completeness(code: str) -> Completeness:
@@ -155,14 +169,62 @@ def check_completeness(code: str) -> Completeness:
         split_top_level_forms(code)
     except IncompleteInput:
         return Completeness(status="incomplete", indent="  ")
-    except UnmatchedDelimiter:
+    except FormError:
         return Completeness(status="invalid")
     return Completeness(status="complete")
 
 
-def _append_form(forms: list[FormSource], raw: str, start: int) -> None:
-    form = raw.strip()
-    if form:
-        leading = len(raw) - len(raw.lstrip())
-        end = start + len(raw.rstrip())
-        forms.append(FormSource(text=form, start=start + leading, end=end))
+def has_incomplete_reader_token(code: str) -> bool:
+    """Detect EOF inside strings, escaped identifiers or reader prefixes."""
+    try:
+        split_top_level_forms(code)
+    except IncompleteInput as exc:
+        return exc.reason in {"string", "escaped-identifier", "interpolation", "prefix"}
+    except FormError:
+        pass
+    return False
+
+
+def has_character_literal(code: str) -> bool:
+    """Recognize actual character tokens, excluding text in strings/comments."""
+    reader = _Reader(code)
+    with suppress(FormError):
+        reader.forms()
+    return reader.has_character
+
+
+def has_escaped_identifier(code: str) -> bool:
+    """Recognize pipe-quoted identifiers, excluding strings and comments."""
+    reader = _Reader(code)
+    with suppress(FormError):
+        reader.forms()
+    return reader.has_escaped_identifier
+
+
+def has_interpolation(code: str) -> bool:
+    """Recognize active ~{ string interpolation, excluding escaped ~~{ text."""
+    reader = _Reader(code)
+    with suppress(FormError):
+        reader.forms()
+    return reader.has_interpolation
+
+
+def form_head_symbol(code: str) -> str | None:
+    """Return an exact unquoted list head; this does not validate special forms."""
+    reader = _Reader(code)
+    try:
+        forms = reader.forms()
+        if len(forms) != 1 or forms[0].text[0] not in "([":
+            return None
+        start = reader.trivia(forms[0].start + 1)
+        if start >= forms[0].end - 1 or code[start] in "()[]\"'`,|" or code.startswith("#\\", start):
+            return None
+        end = reader.atom_end(start)
+        return code[start:end] or None
+    except FormError:
+        return None
+
+
+def is_definition_form(code: str) -> bool:
+    """Identify exactly a top-level define, including function definitions."""
+    return form_head_symbol(code) == "define"

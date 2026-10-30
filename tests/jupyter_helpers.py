@@ -24,6 +24,7 @@ def started_kernel(
     eshkol_repl: str | None = None,
     repl_args: str | None = None,
     load_stdlib: bool = False,
+    protocol: str = "legacy",
 ) -> Iterator[Any]:
     destination = install_kernel_spec(
         prefix=str(tmp_path),
@@ -33,6 +34,7 @@ def started_kernel(
     spec_manager = KernelSpecManager(kernel_dirs=[str(Path(destination).parent)])
     manager = KernelManager(kernel_name=kernel_name, kernel_spec_manager=spec_manager)
     env = os.environ.copy()
+    env["ESHKOL_KERNEL_PROTOCOL"] = protocol
     env["ESHKOL_REPL"] = eshkol_repl or sys.executable
     env["ESHKOL_KERNEL_REPL_ARGS"] = repl_args if repl_args is not None else str(FAKE_REPL)
     env["ESHKOL_KERNEL_LOAD_STDLIB"] = "1" if load_stdlib else "0"
@@ -64,6 +66,8 @@ def collect_outputs(client: Any, msg_id: str) -> list[tuple[str, Any]]:
             continue
         if message["msg_type"] == "stream":
             outputs.append((message["content"]["name"], message["content"]["text"]))
+        elif message["msg_type"] == "execute_result":
+            outputs.append(("execute_result", message["content"]["data"]))
         elif message["msg_type"] == "display_data":
             outputs.append(("display_data", message["content"]["data"]))
         elif message["msg_type"] == "error":

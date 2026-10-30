@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="33" time="103.563" timestamp="2026-10-28T21:47:03.450053-04:00" hostname="gabelinux"><testcase classname="tests.test_runtime_compatibility" name="test_state_multiline_and_multiple_forms" time="3.799" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_is_byte_exact_and_does_not_become_an_error[Error: user-authored data\nsyntax-error: also ordinary output\n]" time="2.838" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_is_byte_exact_and_does_not_become_an_error[eshkol&gt; user prompt text\n[1,2]&gt; coordinates\n]" time="2.958" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_is_byte_exact_and_does_not_become_an_error[EREPL READY\nEREPL DONE\nEREPL FAIL\n]" time="3.280" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_is_byte_exact_and_does_not_become_an_error[  leading and trailing spaces  \n\n]" time="2.940" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_is_byte_exact_and_does_not_become_an_error[no trailing newline]" time="2.815" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_is_byte_exact_and_does_not_become_an_error[\u03bb \u2192 caf\xe9 \u65e5\u672c\u8a9e \U0001f41a\n]" time="3.017" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_and_return_value_are_separate" time="3.113" /><testcase classname="tests.test_runtime_compatibility" name="test_return_values_use_unambiguous_write_format[&quot;hello Eshkol&quot;-&quot;hello Eshkol&quot;]" time="2.865" /><testcase classname="tests.test_runtime_compatibility" name="test_return_values_use_unambiguous_write_format[#t-#t]" time="3.023" /><testcase classname="tests.test_runtime_compatibility" name="test_return_values_use_unambiguous_write_format[#f-#f]" time="2.855" /><testcase classname="tests.test_runtime_compatibility" name="test_return_values_use_unambiguous_write_format[(list 1 2 3)-(1 2 3)]" time="2.992" /><testcase classname="tests.test_runtime_compatibility" name="test_return_values_use_unambiguous_write_format[(quote ())-()]" time="2.838" /><testcase classname="tests.test_runtime_compatibility" name="test_language_error_stops_cell_and_preserves_prior_state" time="3.663" /><testcase classname="tests.test_runtime_compatibility" name="test_stdout_before_error_in_same_form_is_retained" time="3.198" /><testcase classname="tests.test_runtime_compatibility" name="test_completion_uses_real_bindings_without_comment_ghosts" time="2.965" /><testcase classname="tests.test_runtime_compatibility" name="test_runtime_completeness[(+ 1\n 2)-complete]" time="2.560" /><testcase classname="tests.test_runtime_compatibility" name="test_runtime_completeness[(display &quot;parenthesis ) in string&quot;) ; ( in comment-complete]" time="2.602" /><testcase classname="tests.test_runtime_compatibility" name="test_runtime_completeness[(define unfinished-incomplete]" time="2.920" /><testcase classname="tests.test_runtime_compatibility" name="test_runtime_completeness[&quot;unterminated-incomplete]" time="2.565"><failure message="AssertionError: {'status': 'complete'}&#10;assert 'complete' == 'incomplete'&#10;  &#10;  - incomplete&#10;  ? --&#10;  + complete">machine_kernel = &lt;compatibility_helpers.KernelHarness object at 0x7f4892a9b6b0&gt;
+code = '"unterminated', status = 'incomplete'
+
+    @pytest.mark.parametrize(("code", "status"), [
+        ("(+ 1\n 2)", "complete"),
+        ('(display "parenthesis ) in string") ; ( in comment', "complete"),
+        ("(define unfinished", "incomplete"),
+        ('"unterminated', "incomplete"),
+        ("'", "incomplete"),
+        (")", "invalid"),
+    ])
+    def test_runtime_completeness(machine_kernel: KernelHarness, code: str, status: str) -&gt; None:
+        reply = machine_kernel.request("is_complete", code)["content"]
+&gt;       assert reply["status"] == status, reply
+E       AssertionError: {'status': 'complete'}
+E       assert 'complete' == 'incomplete'
+E         
+E         - incomplete
+E         ? --
+E         + complete
+
+/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/tests/test_runtime_compatibility.py:215: AssertionError</failure></testcase><testcase classname="tests.test_runtime_compatibility" name="test_runtime_completeness['-incomplete]" time="2.573"><failure message="AssertionError: {'status': 'complete'}&#10;assert 'complete' == 'incomplete'&#10;  &#10;  - incomplete&#10;  ? --&#10;  + complete">machine_kernel = &lt;compatibility_helpers.KernelHarness object at 0x7f4892a99770&gt;
+code = "'", status = 'incomplete'
+
+    @pytest.mark.parametrize(("code", "status"), [
+        ("(+ 1\n 2)", "complete"),
+        ('(display "parenthesis ) in string") ; ( in comment', "complete"),
+        ("(define unfinished", "incomplete"),
+        ('"unterminated', "incomplete"),
+        ("'", "incomplete"),
+        (")", "invalid"),
+    ])
+    def test_runtime_completeness(machine_kernel: KernelHarness, code: str, status: str) -&gt; None:
+        reply = machine_kernel.request("is_complete", code)["content"]
+&gt;       assert reply["status"] == status, reply
+E       AssertionError: {'status': 'complete'}
+E       assert 'complete' == 'incomplete'
+E         
+E         - incomplete
+E         ? --
+E         + complete
+
+/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/tests/test_runtime_compatibility.py:215: AssertionError</failure></testcase><testcase classname="tests.test_runtime_compatibility" name="test_runtime_completeness[)-invalid]" time="2.577" /><testcase classname="tests.test_runtime_compatibility" name="test_stdlib_is_discovered_from_unrelated_working_directory" time="3.548" /><testcase classname="tests.test_runtime_compatibility" name="test_explicit_scheme_base_import_and_evaluation" time="2.928" /><testcase classname="tests.test_runtime_compatibility" name="test_timeout_stops_runtime_and_next_execution_starts_cleanly" time="4.429" /><testcase classname="tests.test_runtime_compatibility" name="test_process_exit_reports_error_and_next_execution_restarts" time="4.267" /><testcase classname="tests.test_runtime_compatibility" name="test_rich_output_order_metadata_and_final_value" time="3.559" /><testcase classname="tests.test_runtime_compatibility" name="test_silent_execution_suppresses_output_and_history" time="3.510" /><testcase classname="tests.test_runtime_compatibility" name="test_interrupt_is_bounded_and_preserves_state" time="4.754" /><testcase classname="tests.test_runtime_compatibility" name="test_nbclient_notebook_error_recovery_and_saved_outputs" time="3.592" /><testcase classname="tests.test_runtime_compatibility" name="test_kernel_info_exposes_runtime_version" time="2.396" /><testcase classname="tests.test_runtime_compatibility" name="test_execute_reply_and_iopub_use_same_parent_and_order" time="2.716" /><testcase classname="tests.test_runtime_compatibility" name="test_definition_has_unspecified_result" time="2.632"><failure message="AssertionError: assert ['0'] == []&#10;  &#10;  Left contains one more item: '0'&#10;  Use -v to get more diff">machine_kernel = &lt;compatibility_helpers.KernelHarness object at 0x7f4892a87540&gt;
+
+    def test_definition_has_unspecified_result(machine_kernel: KernelHarness) -&gt; None:
+        result = machine_kernel.execute("(define compat-definition-result 41)")
+        assert_ok(result)
+        assert stdout(result) == ""
+&gt;       assert values(result) == []
+E       AssertionError: assert ['0'] == []
+E         
+E         Left contains one more item: '0'
+E         Use -v to get more diff
+
+/home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel/tests/test_runtime_compatibility.py:368: AssertionError</failure></testcase></testsuite></testsuites>

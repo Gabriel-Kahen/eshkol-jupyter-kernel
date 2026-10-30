@@ -1,0 +1,80 @@
+name: Pinned runtime compatibility
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      runtimes: ${{ steps.matrix.outputs.runtimes }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: matrix
+        run: python -c 'import json; print("runtimes=" + json.dumps(json.load(open("compatibility/runtimes.json"))["runtimes"]))' >> "$GITHUB_OUTPUT"
+  compatibility:
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: ${{ fromJSON(needs.matrix.outputs.runtimes) }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Install LLVM 21 and runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates gnupg wget cmake ninja-build libreadline-dev libblas3 liblapack3
+          sudo install -m 0755 -d /etc/apt/keyrings
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/apt.llvm.org.gpg
+          echo 'deb [signed-by=/etc/apt/keyrings/apt.llvm.org.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main' | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update
+          sudo apt-get install -y llvm-21-dev clang-21
+      - name: Download pinned release
+        if: matrix.runtime.kind == 'release'
+        env:
+          RUNTIME_TAG: ${{ matrix.runtime.tag }}
+        run: |
+          eshkol-kernel-fetch-runtime --tag "$RUNTIME_TAG" --output .external/runtime
+          echo "COMPAT_REPL=$PWD/.external/runtime/bin/eshkol-repl" >> "$GITHUB_ENV"
+      - name: Build pinned source
+        if: matrix.runtime.kind == 'source'
+        env:
+          RUNTIME_COMMIT: ${{ matrix.runtime.commit }}
+        run: |
+          git clone --filter=blob:none https://github.com/tsotchke/eshkol.git .external/source
+          git -C .external/source checkout --detach "$RUNTIME_COMMIT"
+          test "$(git -C .external/source rev-parse HEAD)" = "$RUNTIME_COMMIT"
+          cmake -S .external/source -B .external/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21 -DLLVM_DIR=/usr/lib/llvm-21/lib/cmake/llvm -DCMAKE_INSTALL_PREFIX="$PWD/.external/runtime" -DESHKOL_BUILD_TESTS=OFF -DESHKOL_BUILD_AGENT_FFI=OFF -DESHKOL_GPU_ENABLED=OFF -DESHKOL_BLAS_ENABLED=OFF -DESHKOL_STDLIB_TARGET_CPU=x86-64
+          cmake --build .external/build --target eshkol-repl stdlib -j2
+          cat > .external/source-repl <<EOF
+          #!/bin/sh
+          export ESHKOL_LIB_DIR="$PWD/.external/build"
+          export ESHKOL_PATH="$PWD/.external/source/lib"
+          exec "$PWD/.external/build/eshkol-repl" "\$@"
+          EOF
+          chmod +x .external/source-repl
+          echo "COMPAT_REPL=$PWD/.external/source-repl" >> "$GITHUB_ENV"
+      - name: Run behavioral contract
+        env:
+          RUNTIME_REF: ${{ matrix.runtime.tag || matrix.runtime.commit }}
+        run: |
+          source_args=()
+          if [ -d .external/source ]; then
+            source_args=(--runtime-source .external/source)
+          fi
+          python scripts/run_compatibility.py --repl "$COMPAT_REPL" --runtime-ref "$RUNTIME_REF" "${source_args[@]}" --output .external/evidence
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: compatibility-${{ matrix.runtime.id }}
+          path: .external/evidence

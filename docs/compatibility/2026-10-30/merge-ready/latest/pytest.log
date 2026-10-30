@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.6, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current
+configfile: pyproject.toml
+plugins: platformdirs-4.14.0
+collected 36 items
+
+tests/test_runtime_compatibility.py .................................    [ 91%]
+tests/test_runtime_reader_compatibility.py ...                           [100%]
+
+- generated xml file: /home/gabe/.codex/worktrees/4cc3/eshkol-jupyter-kernel-current/.external/merge-ready-latest/junit.xml -
+======================== 36 passed in 71.69s (0:01:11) =========================

@@ -55,3 +55,23 @@ def test_kernel_error_includes_failing_form_context(tmp_path: Path) -> None:
     assert errors
     assert errors[0]["ename"] == "EshkolRuntimeError"
     assert errors[0]["evalue"] == "runtime-error: undefined variable"
+
+
+def test_machine_kernel_jupyter_roundtrip(tmp_path: Path) -> None:
+    fake = Path(__file__).with_name("fake_machine_repl.py")
+    with started_kernel(tmp_path, kernel_name="eshkol-machine", repl_args=str(fake), protocol="machine") as client:
+        reply, outputs = execute_and_collect(client, "(define x 41)\n(mixed-rich)\n(+ x 1)")
+        assert reply["status"] == "ok"
+        assert outputs == [
+            ("stdout", "before\n"),
+            ("display_data", {"text/plain": "middle", "text/html": "<em>middle</em>"}),
+            ("stdout", "after\n"),
+            ("execute_result", {"text/plain": "42"}),
+        ]
+        msg_id = client.complete("(dis", 4)
+        completion = client.get_shell_msg(timeout=10)
+        assert completion["parent_header"]["msg_id"] == msg_id
+        assert completion["content"]["matches"] == ["display"]
+        reply, outputs = execute_and_collect(client, "(syntax-problem)")
+        assert reply["ename"] == "EshkolSyntaxError"
+        assert outputs[0] == ("stdout", "before failure")
