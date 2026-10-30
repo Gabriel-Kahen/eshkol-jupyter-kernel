@@ -13,7 +13,17 @@ from typing import Any
 
 from .display import parse_display_payload
 from .errors import EshkolSessionError
-from .forms import FormError, FormSource, split_top_level_form_sources
+from .forms import (
+    FormError,
+    FormSource,
+    check_completeness,
+    form_head_symbol,
+    has_character_literal,
+    has_escaped_identifier,
+    has_incomplete_reader_token,
+    has_interpolation,
+    split_top_level_form_sources,
+)
 from .machine import MachineClient
 
 try:
@@ -343,6 +353,12 @@ class EshkolReplSession(SessionConfig):
         status = self._request("is_complete", code=code).get("status")
         if not isinstance(status, str) or status not in {"complete", "incomplete", "invalid"}:
             self._invalid_frame()
+        # EREPL v1's depth scan misses unfinished reader tokens and treats
+        # character/escaped-identifier contents as delimiters. Keep the native
+        # request and validation, correcting only these lexical cases.
+        if (has_incomplete_reader_token(code) or has_character_literal(code)
+                or has_escaped_identifier(code) or has_interpolation(code)):
+            return check_completeness(code).status
         return status
 
     def execute(self, code: str) -> ExecutionResult:
@@ -352,7 +368,10 @@ class EshkolReplSession(SessionConfig):
             return ExecutionResult(stderr=str(exc), ok=False, error_name=exc.__class__.__name__)
         result = ExecutionResult()
         for index, form in enumerate(forms, 1):
-            frame = self._request("eval", code=form.text)
+            # Native top-level token preprocessing truncates delimiter-valued
+            # character literals; a pure literal is safe to evaluate in begin.
+            eval_code = f"(begin {form.text})" if form.text.startswith("#\\") else form.text
+            frame = self._request("eval", code=eval_code)
             if type(frame.get("ok")) is not bool or not isinstance(frame.get("stdout"), str):
                 self._invalid_frame()
             text, displays, events = extract_machine_display_data(frame["stdout"])
@@ -368,6 +387,12 @@ class EshkolReplSession(SessionConfig):
                 if not isinstance(frame.get("value"), str) or not isinstance(frame.get("value_type"), str):
                     self._invalid_frame()
                 result.value, result.value_type = frame["value"], frame["value_type"]
+                # Current EREPL v1 leaks the JIT's integer-zero placeholder for
+                # definitions. Normalize only that proven shape and syntax;
+                # arithmetic zero and a begin's explicit final value stay values.
+                if (result.value_type == "integer" and result.value == "0"
+                        and definition_result_is_unspecified(form.text)):
+                    result.value, result.value_type = "", "unspecified"
                 if result.value_type != "unspecified":
                     result.output_events.append(
                         OutputEvent(kind="execute_result", text=result.value, value_type=result.value_type)
@@ -432,6 +457,19 @@ class EshkolReplSession(SessionConfig):
         if self._client is not None:
             self._client.close(graceful=True)
             self._client = None
+
+
+def definition_result_is_unspecified(code: str) -> bool:
+    """Recognize definitions, including a begin whose final datum is one."""
+    head = form_head_symbol(code)
+    if head in {"define", "define-syntax"}:
+        return True
+    if head == "begin":
+        # A single list was verified above; retain the final datum's semantics.
+        form = split_top_level_form_sources(code)[0].text
+        body = split_top_level_form_sources(form[1:-1])[1:]
+        return bool(body) and definition_result_is_unspecified(body[-1].text)
+    return False
 
 
 def extract_machine_display_data(output: str) -> tuple[str, list[DisplayData], list[OutputEvent]]:

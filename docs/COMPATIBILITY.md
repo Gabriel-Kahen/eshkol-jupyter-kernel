@@ -40,13 +40,49 @@ ESHKOL_REAL_REPL=/path/to/eshkol-repl ESHKOL_COMPAT_TRANSPORT=machine \
 skips structured-output cases. It does not certify the known lossy PTY output
 semantics. The runner defaults to machine transport and requires EREPL v1.
 
-`compatibility/runtimes.json` is the reviewable fixed matrix used by
-`.github/workflows/compatibility.yml`: official v1.3.5 and v1.3.6 Linux x64 lite
-assets and current source commit `402126e596a6fe16044f9e181c4a7b36566f54ef`
-(pinned for the October 30 recheck). The previous source pin `341ac812` equals
-the v1.3.6 tag; the October 28 evidence remains retained under that exact revision.
-The existing real smoke job is also pinned to v1.3.6. Update pins intentionally after retaining new evidence;
-`latest` is not a compatibility contract. CI uploads evidence even on failure.
+`compatibility/runtimes.json` is the fixed supported-artifact matrix used by
+`.github/workflows/compatibility.yml`:
+
+- Official v1.3.6 Linux x64 lite binary.
+- Current source `402126e596a6fe16044f9e181c4a7b36566f54ef`.
+- v1.3.5 source `74dc40d68a2cdb39c3392067ac766ccd87d5ad79`, built with
+  a generic x86-64 standard library. This is a source-build compatibility gate.
+
+The official v1.3.5 binary is **not supported on the affected tested CPUs**: it
+can exit with SIGILL before READY, including on an Ubuntu CI runner. Its negative
+evidence remains retained; a passing source build does not certify that binary.
+The previous failing asset gate is replaced by the exact release's source build,
+not an xfail or a skipped test. All original 33 behavioral assertions stay enabled;
+three added native tests cover lexical and zero-value controls. The earlier
+source pin `341ac812` equals the v1.3.6 tag and remains in historical evidence.
+The real smoke job stays pinned to v1.3.6. Update pins only with fresh evidence;
+`latest` is not a compatibility contract. CI uploads evidence on failure too.
+
+## EREPL v1 compatibility corrections
+
+The upstream reference client still exposes the earlier runtime defects. The
+kernel now corrects the notebook-facing behavior without changing the tests:
+
+- Native completeness is still requested and validated. The lexical reader
+  corrects unfinished strings/reader prefixes and statuses distorted by character
+  literals, escaped identifiers or string interpolation. Ordinary native results
+  stay authoritative otherwise.
+- Only a successful integer-zero placeholder from `define`, `define-syntax`, or
+  `begin` ending in one of those definitions is normalized to an unspecified value.
+  Arithmetic zero, quoted definition data and an explicit final zero remain values.
+  Stdout, displays, state and errors are retained.
+- A standalone character literal is evaluated inside `begin` to avoid native
+  top-level token preprocessing truncating delimiter-valued characters. It is a
+  pure literal and retains the same value.
+- Cell splitting respects strings, interpolation, escaped identifiers, characters,
+  vectors, nested prefixes and adjacent datums. Only semicolon line comments are
+  consumed as trivia; unsupported Scheme block/datum comments are not silently
+  discarded. Recursive list/prefix nesting is bounded to 256 levels and fails
+  explicitly beyond that bound rather than exhausting Python's call stack.
+
+These are explicit client corrections to the EREPL v1 boundary, not compiler
+fixes or silent protocol downgrade. Raw upstream evidence remains available for
+upstream remediation. Corrected future `unspecified` results are left untouched.
 
 ## Initial baseline
 

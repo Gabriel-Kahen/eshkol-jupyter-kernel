@@ -45,7 +45,10 @@ Within captured stdout, valid rich-display JSON lines become `display_data`
 events in their original position; ordinary text keeps its whitespace.
 The form's `value` in Scheme `write` representation becomes a separate
 Jupyter `execute_result` after its stdout/display events, unless
-`value_type` is `unspecified`. Multiple top-level forms can therefore publish
+`value_type` is `unspecified`. A proven EREPL v1 integer-zero placeholder from a
+definition (or `begin` ending in a definition) is normalized to unspecified;
+meaningful zero expressions remain values. See the exact corrections and tested
+artifact policy in [COMPATIBILITY.md](COMPATIBILITY.md). Multiple top-level forms can therefore publish
 multiple return values in one cell. A quoted string value remains quoted;
 it is not confused with an explicit `display` call.
 
@@ -64,8 +67,10 @@ identifiers matching a prefix. Jupyter token replacement positions remain
 local because EREPL v1 returns matches without cursor offsets. Documentation
 inspection also remains local.
 
-Completeness status comes from the runtime's `is_complete` response. Local
-indentation is only a presentation suggestion. Upstream currently implements
+Completeness starts with the runtime's `is_complete` response. The kernel's
+lexical reader corrects proven EREPL v1 reader-token defects for unfinished
+strings/prefixes, character literals, escaped identifiers and interpolation.
+Local indentation is only a presentation suggestion. Upstream currently implements
 completeness using a parenthesis/string/comment scan; `complete` does not
 mean the source has passed full syntax validation. Completion bookkeeping
 can also contain names whose definitions failed at runtime.

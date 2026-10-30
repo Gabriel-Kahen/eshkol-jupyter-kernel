@@ -54,7 +54,7 @@ jobs:
           git clone --filter=blob:none https://github.com/tsotchke/eshkol.git .external/source
           git -C .external/source checkout --detach "$RUNTIME_COMMIT"
           test "$(git -C .external/source rev-parse HEAD)" = "$RUNTIME_COMMIT"
-          cmake -S .external/source -B .external/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21 -DLLVM_DIR=/usr/lib/llvm-21/lib/cmake/llvm -DCMAKE_INSTALL_PREFIX="$PWD/.external/runtime" -DESHKOL_BUILD_TESTS=OFF -DESHKOL_BUILD_AGENT_FFI=OFF -DESHKOL_GPU_ENABLED=OFF -DESHKOL_BLAS_ENABLED=OFF
+          cmake -S .external/source -B .external/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21 -DLLVM_DIR=/usr/lib/llvm-21/lib/cmake/llvm -DCMAKE_INSTALL_PREFIX="$PWD/.external/runtime" -DESHKOL_BUILD_TESTS=OFF -DESHKOL_BUILD_AGENT_FFI=OFF -DESHKOL_GPU_ENABLED=OFF -DESHKOL_BLAS_ENABLED=OFF -DESHKOL_STDLIB_TARGET_CPU=x86-64
           cmake --build .external/build --target eshkol-repl stdlib -j2
           cat > .external/source-repl <<EOF
           #!/bin/sh

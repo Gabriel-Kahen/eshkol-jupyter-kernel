@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## Unreleased
 
+- Correct EREPL v1 reader completeness and definition placeholders without losing meaningful zero values or stdout.
+- Preserve lexical cell boundaries for character literals, escaped identifiers, interpolation and adjacent datums.
+- Validate v1.3.5 using an exact generic-CPU source build; retain the distributed binary's SIGILL exclusion and evidence.
+
 - Preserve original protocol failures when macOS reports an exited process group as permission-denied; keep bounded owned-child and descendant cleanup.
 - Run CI doctor checks against the machine-protocol fake runtime and recheck compatibility against Eshkol source `402126e5`.
 

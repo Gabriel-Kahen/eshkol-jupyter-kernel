@@ -101,6 +101,10 @@ def main() -> None:
             frame["stdout"] = "before failure"
             if code == "(location-error)":
                 frame["error"].update(line=1, column=3)
+        elif mode == "zero-result":
+            # A wire-level peer deliberately exposing a result independent of
+            # source syntax, for correction and no-correction controls.
+            frame.update(stdout="kept\n", value="0", value_type="integer")
         elif code == "(pipe-pressure)":
             frame["stdout"] = "x" * 1048576
         elif code == "(print-error-text)":

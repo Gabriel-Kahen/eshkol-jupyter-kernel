@@ -64,6 +64,7 @@ def main():
     env = os.environ.copy()
     env.update(ESHKOL_REAL_REPL=str(repl), ESHKOL_COMPAT_TRANSPORT=args.transport)
     argv = [sys.executable, "-m", "pytest", "-ra", "tests/test_runtime_compatibility.py",
+            "tests/test_runtime_reader_compatibility.py",
             f"--junitxml={output / 'junit.xml'}"]
     report["test_command"] = argv
     valid = args.transport != "machine" or (len(ready) == 1 and ready[0].get("protocol_version") == 1)

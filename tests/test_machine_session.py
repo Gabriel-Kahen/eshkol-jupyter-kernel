@@ -204,3 +204,43 @@ def test_shutdown_cleans_up_descendants_holding_pipes():
     session.close()
     assert time.monotonic() - started < 3
     assert not any(thread.is_alive() for thread in client._threads)
+
+
+@pytest.mark.parametrize("code,unspecified", [
+    ("(define x 0)", True),
+    ("(define (f x) x)", True),
+    ("(define-syntax ident (syntax-rules () ((_ x) x)))", True),
+    ("( ; header comment\n define x 1)", True),
+    ("(begin (define x 1))", True),
+    ("(begin (display 1) (begin (define x 1)))", True),
+    ("0", False),
+    ("(begin (define x 1) 0)", False),
+    ("'(define x 1)", False),
+    ('"(define x 1)"', False),
+    ("(define-like 1)", False),
+])
+def test_definition_placeholder_correction_preserves_real_zero_and_output(code, unspecified):
+    session = make_session("--mode=zero-result")
+    try:
+        result = session.execute(code)
+    finally:
+        session.close()
+    assert result.ok
+    assert result.stdout == "kept\n"
+    assert result.value == ("" if unspecified else "0")
+    assert result.value_type == ("unspecified" if unspecified else "integer")
+    expected = ["stdout"] if unspecified else ["stdout", "execute_result"]
+    assert [event.kind for event in result.output_events] == expected
+
+
+@pytest.mark.parametrize("code,status", [
+    ('"unterminated', "incomplete"),
+    ("''", "incomplete"),
+    ("' ; unfinished datum", "incomplete"),
+    (r"(list #\; #\" #\( #\))", "complete"),
+    ('(quote |a)b|)', "complete"),
+    ('(quote |a"b|)', "complete"),
+    ('(quote |a;b|)', "complete"),
+])
+def test_native_completeness_is_corrected_for_reader_tokens(session, code, status):
+    assert session.is_complete(code) == status
