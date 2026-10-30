@@ -42,10 +42,10 @@ semantics. The runner defaults to machine transport and requires EREPL v1.
 
 `compatibility/runtimes.json` is the reviewable fixed matrix used by
 `.github/workflows/compatibility.yml`: official v1.3.5 and v1.3.6 Linux x64 lite
-assets and source commit `341ac812ed600fd9d27c28e9509d66ab71363947`.
-That source commit currently equals the v1.3.6 tag: testing both distinguishes
-packaging/toolchain effects, not a newer language version. The existing real smoke
-job is also pinned to v1.3.6. Update pins intentionally after retaining new evidence;
+assets and current source commit `402126e596a6fe16044f9e181c4a7b36566f54ef`
+(pinned for the October 30 recheck). The previous source pin `341ac812` equals
+the v1.3.6 tag; the October 28 evidence remains retained under that exact revision.
+The existing real smoke job is also pinned to v1.3.6. Update pins intentionally after retaining new evidence;
 `latest` is not a compatibility contract. CI uploads evidence even on failure.
 
 ## Initial baseline

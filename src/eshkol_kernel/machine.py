@@ -208,6 +208,17 @@ class MachineClient:
                 os.killpg(self._proc.pid, sig)
         except ProcessLookupError:
             pass
+        except PermissionError:
+            # Darwin may report EPERM for an already-dead process group. Keep
+            # signaling groups with surviving descendants, but never mask the
+            # original protocol error after the owned child has exited.
+            if self.is_running:
+                try:
+                    self._proc.send_signal(sig)
+                except ProcessLookupError:
+                    pass
+                except PermissionError as exc:
+                    raise EshkolSessionError("Cannot signal the owned Eshkol REPL process.") from exc
 
     def close(self, *, graceful: bool = False) -> None:
         proc = self._proc

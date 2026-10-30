@@ -42,7 +42,7 @@ jobs:
         run: |
           eshkol-kernel-doctor \
             --eshkol-repl "$(python -c 'import sys; print(sys.executable)')" \
-            --repl-arg tests/fake_eshkol_repl.py \
+            --repl-arg tests/fake_machine_repl.py \
             --skip-kernelspec
 
   real-eshkol:
