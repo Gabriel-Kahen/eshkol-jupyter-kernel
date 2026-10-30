@@ -183,9 +183,9 @@ def test_generic_head_supports_explicit_adapter_policy() -> None:
 
 def test_unsupported_comment_syntax_is_not_silently_discarded() -> None:
     assert split_top_level_forms("#; (define x 1)") == ["#;", "(define x 1)"]
-    forms = split_top_level_forms("#| not a native comment |# (define x 1)")
-    assert forms[0] == "#"
-    assert forms[-1] == "(define x 1)"
+    assert split_top_level_forms("#| unsupported-token") == ["#|", "unsupported-token"]
+    with pytest.raises(IncompleteInput):
+        split_top_level_forms("#| not a native comment |# (define x 1)")
     assert not is_definition_form("#; (define x 1)")
 
 
@@ -239,3 +239,11 @@ def test_unterminated_interpolation_is_an_incomplete_reader_token(code: str) -> 
     assert has_interpolation(code)
     assert has_incomplete_reader_token(code)
     assert check_completeness(code).status == "incomplete"
+
+
+def test_pipe_inside_ordinary_symbol_is_not_an_escaped_identifier():
+    assert split_top_level_forms("(quote foo|bar) foo|bar |a||b|") == [
+        "(quote foo|bar)", "foo|bar", "|a|", "|b|",
+    ]
+    assert form_head_symbol("(define|suffix x)") == "define|suffix"
+    assert not is_definition_form("(define|suffix x)")

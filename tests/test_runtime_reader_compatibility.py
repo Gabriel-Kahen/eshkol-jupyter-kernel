@@ -16,7 +16,7 @@ from test_runtime_compatibility import (
 
 def test_native_reader_completeness_controls(machine_kernel):
     for code in [r'(list #\; #\" #\( #\))', '(quote |a)b|)', '(quote |a"b|)',
-                 '(quote |a;b|)', '(display "greeting ~{(string-append "(" "x")}")']:
+                 '(quote |a;b|)', '(quote foo|bar)', '(display "greeting ~{(string-append "(" "x")}")']:
         reply = machine_kernel.request("is_complete", code)["content"]
         assert reply["status"] == "complete", (code, reply)
     for code in ["''", "' ; comment", '"unfinished', '(quote |unfinished']:
@@ -29,7 +29,7 @@ def test_native_adjacent_datums_characters_and_interpolation(machine_kernel):
     assert values(adjacent) == ['"one"', '"two"', "0", "3"]
     for code, expected in [(r'#\;', r'#\;'), (r'#\(', r'#\('), (r'#\)', r'#\)'),
                            (r'#\"', r'#\"'), ('(quote |a)b|)', '|a)b|'),
-                           ('(quote |a"b|)', '|a"b|'), ('(quote |a;b|)', '|a;b|')]:
+                           ('(quote |a"b|)', '|a"b|'), ('(quote |a;b|)', '|a;b|'), ('(quote foo|bar)', r'|foo\|bar|')]:
         result = machine_kernel.execute(code)
         assert_ok(result)
         assert values(result) == [expected], (code, result)

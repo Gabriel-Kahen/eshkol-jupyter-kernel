@@ -141,7 +141,7 @@ class _Reader:
         raise IncompleteInput("Unterminated string interpolation.", reason="interpolation")
 
     def atom_end(self, index: int) -> int:
-        while index < len(self.code) and not self.code[index].isspace() and self.code[index] not in "()[];\"'`,|":
+        while index < len(self.code) and not self.code[index].isspace() and self.code[index] not in "()[];\"'`,":
             index += 1
         return index
 
