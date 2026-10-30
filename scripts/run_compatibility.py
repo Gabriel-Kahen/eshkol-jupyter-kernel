@@ -43,7 +43,7 @@ def main():
         if line.startswith("EREPL/1 "):
             try:
                 frame = json.loads(line[8:])
-                if frame.get("type") == "ready":
+                if isinstance(frame, dict) and frame.get("type") == "ready":
                     ready.append(frame)
             except ValueError:
                 pass
