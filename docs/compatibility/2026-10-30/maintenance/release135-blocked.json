@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "started_utc": "2026-10-30T15:20:42.473885+00:00",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+  "kernel_head": {
+    "argv": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "returncode": 0,
+    "stdout": "17171ce8edcb0fdd4bc840355ff8501b31290ff2\n",
+    "stderr": ""
+  },
+  "kernel_status": {
+    "argv": [
+      "git",
+      "status",
+      "--short"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "runtime_ref": "v1.3.5-evolve",
+  "repl": "/home/runner/work/eshkol-jupyter-kernel/eshkol-jupyter-kernel/.external/runtime/bin/eshkol-repl",
+  "repl_sha256": "4532fdd2aa7c8d34f46c1e5c1cdf160c05dd284c4a992804fa78d7f49088ee32",
+  "transport": "machine",
+  "handshake": [],
+  "probe": {
+    "argv": [
+      "/home/runner/work/eshkol-jupyter-kernel/eshkol-jupyter-kernel/.external/runtime/bin/eshkol-repl",
+      "--machine"
+    ],
+    "returncode": -4,
+    "stdout": "",
+    "stderr": "[REPL] Discovered 788 functions, 959 globals, 23 variadic entries from stdlib.bc\n"
+  },
+  "dependencies": {
+    "eshkol-kernel": "0.1.0a5",
+    "ipykernel": "7.4.0",
+    "jupyter-client": "8.10.0",
+    "nbclient": "0.11.0",
+    "pytest": "9.2.0"
+  },
+  "test_command": [
+    "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+    "-m",
+    "pytest",
+    "-ra",
+    "tests/test_runtime_compatibility.py",
+    "--junitxml=/home/runner/work/eshkol-jupyter-kernel/eshkol-jupyter-kernel/.external/evidence/junit.xml"
+  ],
+  "outcome": "blocked: required EREPL v1 handshake unavailable",
+  "finished_utc": "2026-10-30T15:20:42.524364+00:00"
+}
