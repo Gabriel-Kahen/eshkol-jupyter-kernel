@@ -4,6 +4,9 @@ All notable changes to this project will be documented here.
 
 ## Unreleased
 
+- Preserve the running REPL and notebook state when an interrupt arrives while waiting for a request write to finish.
+- Exercise repeated native interrupt recovery and retain complete Jupyter failure replies in compatibility reports.
+
 - Correct EREPL v1 reader completeness and definition placeholders without losing meaningful zero values or stdout.
 - Preserve lexical cell boundaries for character literals, escaped identifiers, interpolation and adjacent datums.
 - Validate v1.3.5 using an exact generic-CPU source build; retain the distributed binary's SIGILL exclusion and evidence.

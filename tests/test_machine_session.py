@@ -3,10 +3,12 @@ from __future__ import annotations
 import sys
 import threading
 import time
+from concurrent.futures import Future
 from pathlib import Path
 
 import pytest
 
+from eshkol_kernel import machine
 from eshkol_kernel.kernel import EshkolKernel
 from eshkol_kernel.session import EshkolReplSession, EshkolSessionError, LegacyReplSession
 
@@ -99,6 +101,148 @@ def test_interrupt_preserves_session(session):
     assert result.error_name == "KeyboardInterrupt"
     assert result.error["kind"] == "interrupted"
     assert session.execute("(+ 1 2)").value == "3"
+
+
+@pytest.mark.parametrize("interrupt_at", ["write_pending", "write_done", "response"])
+def test_signal_during_request_preserves_state(session, monkeypatch, interrupt_at):
+    assert session.execute("(define x 41)").ok
+    pid = session.ready_info["pid"]
+    client = session._client
+    first_wait = threading.Event()
+    completions = []
+    injected = []
+
+    class InterruptedCompletion(Future):
+        def set_result(self, result):
+            if interrupt_at == "write_pending":
+                assert first_wait.wait(timeout=3)
+            super().set_result(result)
+
+        def result(self, timeout=None):
+            if not injected and interrupt_at != "response":
+                if interrupt_at == "write_done":
+                    super().result(timeout=timeout)
+                else:
+                    assert not self.done()
+                injected.append(True)
+                first_wait.set()
+                raise KeyboardInterrupt
+            return super().result(timeout=timeout)
+
+    interrupt = client.interrupt
+    receive = client._receive
+    timer = None
+
+    def receive_result(timeout):
+        if interrupt_at == "response" and not injected:
+            injected.append(True)
+            raise KeyboardInterrupt
+        return receive(timeout)
+
+    def forward_interrupt():
+        nonlocal timer
+        assert completions[0].done()
+        # Let the fake enter its interruptible sleep before delivering SIGINT.
+        timer = threading.Timer(0.3, interrupt)
+        timer.start()
+
+    def completion():
+        sent = InterruptedCompletion()
+        completions.append(sent)
+        return sent
+
+    try:
+        with monkeypatch.context() as patched:
+            patched.setattr(machine, "Future", completion)
+            patched.setattr(client, "interrupt", forward_interrupt)
+            patched.setattr(client, "_receive", receive_result)
+            result = session.execute("(hang)")
+        assert result.error_name == "KeyboardInterrupt"
+        assert len(completions) == 1
+        assert len(injected) == 1
+        assert session.execute("(+ x 1)").value == "42"
+        assert session.ready_info["pid"] == pid
+    finally:
+        first_wait.set()
+        if timer is not None:
+            timer.cancel()
+            timer.join(timeout=2)
+
+
+def test_signal_during_blocked_write_keeps_original_deadline(monkeypatch):
+    session = make_session("--mode=stalled-input", timeout=0.1)
+    session.start()
+    client = session._client
+    interrupts = []
+
+    class InterruptedCompletion(Future):
+        interrupted = False
+
+        def result(self, timeout=None):
+            if not self.interrupted:
+                self.interrupted = True
+                raise KeyboardInterrupt
+            return super().result(timeout=timeout)
+
+    started = time.monotonic()
+    try:
+        with monkeypatch.context() as patched:
+            patched.setattr(machine, "Future", InterruptedCompletion)
+            patched.setattr(client, "interrupt", lambda: interrupts.append(True))
+            with pytest.raises(EshkolSessionError, match="write timed out"):
+                session.execute('"' + "x" * 1048576 + '"')
+        assert time.monotonic() - started < 3
+        assert not interrupts  # An incomplete JSON line must never receive SIGINT.
+        assert not session.is_running
+        assert not any(thread.is_alive() for thread in client._threads)
+    finally:
+        session.close()
+
+
+@pytest.mark.parametrize("code,error", [
+    ("(+ x 1)", None),
+    ("(eof)", "protocol pipe"),
+    ("(malformed)", "Malformed"),
+    ("(wrong-id)", "Unexpected"),
+])
+def test_signal_after_buffered_response_does_not_interrupt_next_cell(session, monkeypatch, code, error):
+    assert session.execute("(define x 41)").ok
+    pid = session.ready_info["pid"]
+    client = session._client
+    buffered = threading.Event()
+    interrupts = []
+    put = client._frames.put
+
+    def buffer_frame(frame):
+        put(frame)
+        buffered.set()
+
+    class CompletedBeforeInterrupt(Future):
+        interrupted = False
+
+        def result(self, timeout=None):
+            result = super().result(timeout=timeout)
+            if not self.interrupted:
+                self.interrupted = True
+                assert buffered.wait(timeout=3)
+                raise KeyboardInterrupt
+            return result
+
+    with monkeypatch.context() as patched:
+        patched.setattr(machine, "Future", CompletedBeforeInterrupt)
+        patched.setattr(client._frames, "put", buffer_frame)
+        patched.setattr(client, "interrupt", lambda: interrupts.append(True))
+        if error:
+            with pytest.raises(EshkolSessionError, match=error):
+                session.execute(code)
+        else:
+            assert session.execute(code).value == "42"
+    assert not interrupts
+    if error:
+        assert not session.is_running
+    else:
+        assert session.execute("(+ x 1)").value == "42"
+        assert session.ready_info["pid"] == pid
 
 
 @pytest.mark.parametrize(

@@ -12,6 +12,8 @@ import sys
 import threading
 import time
 from collections import deque
+from concurrent.futures import Future
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from contextlib import suppress
 from typing import Any
 
@@ -102,9 +104,9 @@ class MachineClient:
                     if not written:
                         raise OSError("stdin write made no progress")
                     pending = pending[written:]
-                sent.put(None)
+                sent.set_result(None)
             except (OSError, ValueError) as exc:
-                sent.put(EshkolSessionError(f"Eshkol REPL pipe failed: {exc}"))
+                sent.set_exception(EshkolSessionError(f"Eshkol REPL pipe failed: {exc}"))
                 return
 
     def _read_stderr(self) -> None:
@@ -151,6 +153,9 @@ class MachineClient:
             frame = self._frames.get(timeout=max(0, timeout))
         except queue.Empty as exc:
             raise EshkolSessionError(f"EREPL response timed out after {timeout:g} seconds.") from exc
+        return self._check_received_frame(frame)
+
+    def _check_received_frame(self, frame: dict[str, Any] | EshkolSessionError) -> dict[str, Any]:
         if isinstance(frame, EshkolSessionError):
             with self._diagnostic_lock:
                 diagnostics = "".join([*self._startup_tail, *self._diagnostics]).strip()
@@ -165,20 +170,32 @@ class MachineClient:
             try:
                 deadline = time.monotonic() + timeout
                 payload = json.dumps({"id": req_id, "op": op, **fields}, ensure_ascii=True) + "\n"
-                sent: queue.Queue = queue.Queue(maxsize=1)
+                sent: Future[None] = Future()
                 self._outgoing.put((payload.encode(self._encoding), sent))
+
+                def wait_for_write() -> None:
+                    try:
+                        sent.result(timeout=max(0, deadline - time.monotonic()))
+                    except FutureTimeoutError as exc:
+                        raise EshkolSessionError(f"EREPL request write timed out after {timeout:g} seconds.") from exc
+
                 try:
-                    send_error = sent.get(timeout=max(0, deadline - time.monotonic()))
-                except queue.Empty as exc:
-                    raise EshkolSessionError(f"EREPL request write timed out after {timeout:g} seconds.") from exc
-                if send_error is not None:
-                    raise send_error
-                try:
+                    wait_for_write()
                     frame = self._receive(deadline - time.monotonic())
                 except KeyboardInterrupt:
                     # Signal-mode Jupyter interrupts arrive in Python; forward to the isolated child.
-                    self.interrupt()
-                    frame = self._receive(timeout)
+                    # Finish the JSON line first. Future.result() can be retried even if
+                    # the interrupt arrived just after consuming its completion value.
+                    wait_for_write()
+                    try:
+                        frame = self._frames.get_nowait()
+                    except queue.Empty:
+                        self.interrupt()
+                        frame = self._receive(timeout)
+                    else:
+                        # A completed request must not leave a late interrupt for
+                        # the next cell. Queued protocol failures still propagate.
+                        frame = self._check_received_frame(frame)
                 expected = {"eval": "result", "complete": "completion"}.get(op, op)
                 if frame.get("id") != req_id or frame.get("type") != expected:
                     raise EshkolSessionError(f"Unexpected EREPL response to {op!r}: {frame!r}")

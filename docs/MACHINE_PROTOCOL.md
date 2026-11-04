@@ -79,6 +79,11 @@ Interrupt is an out-of-band native signal, not a JSON request, because the
 runtime cannot read stdin while evaluating. A successful interrupt returns a
 structured `interrupted` error; the process may then be reused. Native
 runtime and frontend behavior still require real-runtime testing.
+If Jupyter interrupts Python while a request is being written, the bridge
+finishes that write within its original deadline before forwarding the signal.
+This avoids sending a signal during a partial JSON line or discarding a write
+acknowledgment and restarting the session. A stalled write still times out and
+closes the process.
 
 A full session reset/restart shuts down the old process and starts another.
 EREPL `reset` only clears tracked-definition bookkeeping and cannot unload
