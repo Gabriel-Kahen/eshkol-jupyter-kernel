@@ -106,7 +106,8 @@ def values(exchange: dict[str, Any]) -> list[str]:
 
 
 def assert_ok(exchange: dict[str, Any]) -> None:
-    assert content(exchange)["status"] == "ok", content(exchange)
+    if content(exchange)["status"] != "ok":
+        pytest.fail(json.dumps(exchange, indent=2), pytrace=False)
     assert not messages(exchange, "error")
 
 
@@ -304,20 +305,22 @@ def test_silent_execution_suppresses_output_and_history(machine_kernel: KernelHa
 
 def test_interrupt_is_bounded_and_preserves_state(machine_kernel: KernelHarness) -> None:
     assert_ok(machine_kernel.execute("(define compat-interrupt-state 41)"))
-    timer = Timer(1.5, machine_kernel.interrupt)
-    started = time.monotonic()
-    timer.start()
-    try:
-        interrupted = machine_kernel.execute("(let loop () (loop))")
-    finally:
-        timer.cancel()
-        timer.join(timeout=2)
-    assert time.monotonic() - started < 15
-    assert content(interrupted)["status"] == "error"
-    assert content(interrupted)["ename"] in {"KeyboardInterrupt", "EshkolInterrupted", "EshkolInterruptedError"}
-    recovered = machine_kernel.execute("(+ compat-interrupt-state 1)")
-    assert_ok(recovered)
-    assert values(recovered) == ["42"]
+    for expected in range(42, 45):
+        timer = Timer(1.5, machine_kernel.interrupt)
+        started = time.monotonic()
+        timer.start()
+        try:
+            interrupted = machine_kernel.execute("(let loop () (loop))")
+        finally:
+            timer.cancel()
+            timer.join(timeout=2)
+        assert time.monotonic() - started < 15
+        assert content(interrupted)["status"] == "error"
+        assert content(interrupted)["ename"] in {"KeyboardInterrupt", "EshkolInterrupted", "EshkolInterruptedError"}
+        recovered = machine_kernel.execute("(+ compat-interrupt-state 1)")
+        assert_ok(recovered)
+        assert values(recovered) == [str(expected)]
+        assert_ok(machine_kernel.execute(f"(set! compat-interrupt-state {expected})"))
 
 
 def test_nbclient_notebook_error_recovery_and_saved_outputs(machine_kernel: KernelHarness, tmp_path: Path) -> None:
