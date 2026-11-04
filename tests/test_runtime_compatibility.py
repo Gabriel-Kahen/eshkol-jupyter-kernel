@@ -106,7 +106,8 @@ def values(exchange: dict[str, Any]) -> list[str]:
 
 
 def assert_ok(exchange: dict[str, Any]) -> None:
-    assert content(exchange)["status"] == "ok", content(exchange)
+    if content(exchange)["status"] != "ok":
+        pytest.fail(json.dumps(exchange, indent=2), pytrace=False)
     assert not messages(exchange, "error")
 
 
